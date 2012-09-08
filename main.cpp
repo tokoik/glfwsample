@@ -33,6 +33,9 @@ int main(int argc, const char * argv[])
   // }Œ`‚ğ•\¦‚·‚é
   while (glfwGetWindowParam(GLFW_OPENED))
   {
+    // ‰æ–ÊÁ‹
+    glClear(GL_COLOR_BUFFER_BIT);
+
     /*
     ** ‚±‚±‚Å OpenGL ‚É‚æ‚é•`‰æ‚ğs‚¤
     */
