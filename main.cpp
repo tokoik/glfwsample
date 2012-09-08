@@ -2,6 +2,13 @@
 #include <cstdlib>
 #include <GL/glfw.h>
 
+// 終了処理
+static void term(void)
+{
+  // GLFW を終了する
+  glfwTerminate();
+}
+
 int main(int argc, const char * argv[])
 {
   // GLFW を初期化する
@@ -12,12 +19,14 @@ int main(int argc, const char * argv[])
     exit(EXIT_FAILURE);
   }
 
+  // 終了処理を登録する
+  atexit(term);
+
   // GLFW のウィンドウを開く
   if (!glfwOpenWindow(0, 0, 0, 0, 0, 0, 0, 0, GLFW_WINDOW))
   {
     // ウィンドウが開けなかった
     std::cerr << "Can't open GLFW window." << std::endl;
-    glfwTerminate();
     exit(EXIT_FAILURE);
   }
 
@@ -30,9 +39,6 @@ int main(int argc, const char * argv[])
 
     glfwSwapBuffers();
   }
-
-  // GLFW を終了する
-  glfwTerminate();
 
   return EXIT_SUCCESS;
 }
