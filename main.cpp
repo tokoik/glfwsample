@@ -32,6 +32,10 @@ int main(int argc, const char * argv[])
     exit(EXIT_FAILURE);
   }
 
+  // 開いたウィンドウに対する設定
+  glfwSwapInterval(1);
+  glfwSetWindowTitle("sample");
+
   // OpenGL の初期設定
   init();
 
