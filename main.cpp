@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cstdlib>
-#include <GL/glfw.h>
+#include "gg.h"
 
 // ‰Šúİ’è
 static void init(void)
