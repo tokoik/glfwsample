@@ -27,15 +27,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __GG_H__
 
 #include <cstring>
-#if defined(__APPLE__)
-#  define GLFW_INCLUDE_GL3
-#endif
-#define GLFW_NO_GLU
-#include <GL/glfw.h>
 
+#define GLFW_NO_GLU
 #if defined(WIN32)
-#  pragma warning(disable:4996)
-//#  pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
+#  include <GL/glfw.h>
 #  include "glext.h"
 
 extern PFNGLBLENDCOLORPROC glBlendColor;
@@ -649,10 +644,13 @@ extern PFNGLTEXSTORAGE2DMULTISAMPLEPROC glTexStorage2DMultisample;
 extern PFNGLTEXSTORAGE3DMULTISAMPLEPROC glTexStorage3DMultisample;
 
 #elif defined(__APPLE__)
+#  define GLFW_INCLUDE_GL3
+#  include <GL/glfw.h>
 #  include <OpenGL/glext.h>
 #  include <OpenGL/gl3ext.h>
 #else
 #  define GL_GLEXT_PROTOTYPES
+#  include <GL/glfw.h>
 #  include <GL/glext.h>
 #endif
 
