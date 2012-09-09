@@ -30,7 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cmath>
 #include "gg.h"
 
-#if defined(WIN32)
+#if defined(_WIN32)
 PFNGLBLENDCOLORPROC glBlendColor;
 PFNGLBLENDEQUATIONPROC glBlendEquation;
 PFNGLDRAWRANGEELEMENTSPROC glDrawRangeElements;
@@ -641,7 +641,7 @@ PFNGLTEXBUFFERRANGEPROC glTexBufferRange;
 PFNGLTEXSTORAGE2DMULTISAMPLEPROC glTexStorage2DMultisample;
 PFNGLTEXSTORAGE3DMULTISAMPLEPROC glTexStorage3DMultisample;
 
-static void initGLExtFunc(void)
+static inline void initGLExtFunc(void)
 {
   glBlendColor = (PFNGLBLENDCOLORPROC)glfwGetProcAddress("glBlendColor");
   glBlendEquation = (PFNGLBLENDEQUATIONPROC)glfwGetProcAddress("glBlendEquation");
@@ -1260,13 +1260,10 @@ static void initGLExtFunc(void)
 */
 void gg::ggInit(void)
 {
-#if defined(WIN32)
+#if defined(_WIN32)
   // OpenGL ägí£ã@î\ÇÃóLå¯âª
   initGLExtFunc();
 #endif
-
-  // Swap Interval ÇÃê›íË
-  glfwSwapInterval(1);
 }
 
 /*
