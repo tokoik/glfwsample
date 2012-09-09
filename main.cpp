@@ -1,6 +1,9 @@
 #include <iostream>
 #include <cstdlib>
+
+// 補助プログラム
 #include "gg.h"
+using namespace gg;
 
 // 初期設定
 static void init(void)
@@ -41,6 +44,9 @@ int main(int argc, const char * argv[])
     std::cerr << "Can't open GLFW window." << std::endl;
     exit(EXIT_FAILURE);
   }
+
+  // 補助プログラムの初期化
+  ggInit();
 
   // 開いたウィンドウに対する設定
   glfwSwapInterval(1);
