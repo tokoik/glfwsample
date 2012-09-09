@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define GLFW_NO_GLU
 #if defined(WIN32)
+#  pragma warning(disable:4996)
 #  include <GL/glfw.h>
 #  include "glext.h"
 
