@@ -66,9 +66,6 @@ int main(int argc, const char * argv[])
     "}",
   };
 
-  // コンパイル／リンク結果
-  GLint status;
-
   // バーテックスシェーダのシェーダオブジェクト
   GLuint vobj = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vobj, sizeof vsrc / sizeof vsrc[0], vsrc, NULL);
@@ -102,6 +99,28 @@ int main(int argc, const char * argv[])
   glBindFragDataLocation(program, 0, "fc");
   glLinkProgram(program);
 
+  // 図形データ
+  static const GLfloat pv[][2] =
+  {
+    { -0.9f, -0.9f },
+    {  0.9f, -0.9f },
+    {  0.9f,  0.9f },
+    { -0.9f,  0.9f }
+  };
+
+  // 頂点バッファオブジェクト
+  GLuint vbo;
+  glGenBuffers(1, &vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof pv, pv, GL_STATIC_DRAW);
+
+    // 頂点配列オブジェクト
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+  glVertexAttribPointer(1, sizeof pv[0] / sizeof pv[0][0], GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(1);
+
   // 図形を表示する
   while (glfwGetWindowParam(GLFW_OPENED))
   {
@@ -111,9 +130,9 @@ int main(int argc, const char * argv[])
     // シェーダプログラムの使用
     glUseProgram(program);
 
-    /*
-    ** ここで OpenGL による描画を行う
-    */
+    // 図形の描画
+    glBindVertexArray(vao);
+    glDrawArrays(GL_LINE_LOOP, 0, sizeof pv / sizeof pv[0]);
 
     glfwSwapBuffers();
   }
