@@ -95,7 +95,7 @@ int main(int argc, const char * argv[])
   glDeleteShader(fobj);
 
   // プログラムオブジェクトのリンク
-  glBindAttribLocation(program, 1, "pv");
+  glBindAttribLocation(program, 0, "pv");
   glBindFragDataLocation(program, 0, "fc");
   glLinkProgram(program);
 
@@ -118,8 +118,8 @@ int main(int argc, const char * argv[])
   GLuint vao;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
-  glVertexAttribPointer(1, sizeof pv[0] / sizeof pv[0][0], GL_FLOAT, GL_FALSE, 0, 0);
-  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(0, sizeof pv[0] / sizeof pv[0][0], GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
 
   // 図形を表示する
   while (glfwGetWindowParam(GLFW_OPENED))
