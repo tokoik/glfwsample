@@ -1,68 +1,68 @@
 #include <iostream>
 #include <cstdlib>
 
-// è£œåŠ©ãƒ—ãƒ­ã‚°ãƒ©ãƒ 
+// •â•ƒvƒƒOƒ‰ƒ€
 #include "gg.h"
 using namespace gg;
 
-// åˆæœŸè¨­å®š
+// ‰Šúİ’è
 static void init(void)
 {
-  // èƒŒæ™¯è‰²
+  // ”wŒiF
   glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 }
 
-// çµ‚äº†å‡¦ç†
+// I—¹ˆ—
 static void term(void)
 {
-  // GLFW ã‚’çµ‚äº†ã™ã‚‹
+  // GLFW ‚ğI—¹‚·‚é
   glfwTerminate();
 }
 
 int main(int argc, const char * argv[])
 {
-  // GLFW ã‚’åˆæœŸåŒ–ã™ã‚‹
+  // GLFW ‚ğ‰Šú‰»‚·‚é
   if (!glfwInit())
   {
-    // åˆæœŸåŒ–ã«å¤±æ•—ã—ãŸ
+    // ‰Šú‰»‚É¸”s‚µ‚½
     std::cerr << "Can't initialize GLFW." << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  // çµ‚äº†å‡¦ç†ã‚’ç™»éŒ²ã™ã‚‹
+  // I—¹ˆ—‚ğ“o˜^‚·‚é
   atexit(term);
 
-  // OpenGL Version 3.2 Core Profile ã‚’é¸æŠã™ã‚‹
+  // OpenGL Version 3.2 Core Profile ‚ğ‘I‘ğ‚·‚é
   glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
   glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
   glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  // GLFW ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’é–‹ã
+  // GLFW ‚ÌƒEƒBƒ“ƒhƒE‚ğŠJ‚­
   if (!glfwOpenWindow(0, 0, 0, 0, 0, 0, 0, 0, GLFW_WINDOW))
   {
-    // ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ãŒé–‹ã‘ãªã‹ã£ãŸ
+    // ƒEƒBƒ“ƒhƒE‚ªŠJ‚¯‚È‚©‚Á‚½
     std::cerr << "Can't open GLFW window." << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  // è£œåŠ©ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã®åˆæœŸåŒ–
+  // •â•ƒvƒƒOƒ‰ƒ€‚Ì‰Šú‰»
   ggInit();
 
-  // é–‹ã„ãŸã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«å¯¾ã™ã‚‹è¨­å®š
+  // ŠJ‚¢‚½ƒEƒBƒ“ƒhƒE‚É‘Î‚·‚éİ’è
   glfwSwapInterval(1);
   glfwSetWindowTitle("sample");
 
-  // OpenGL ã®åˆæœŸè¨­å®š
+  // OpenGL ‚Ì‰Šúİ’è
   init();
 
-  // å›³å½¢ã‚’è¡¨ç¤ºã™ã‚‹
+  // }Œ`‚ğ•\¦‚·‚é
   while (glfwGetWindowParam(GLFW_OPENED))
   {
-    // ç”»é¢æ¶ˆå»
+    // ‰æ–ÊÁ‹
     glClear(GL_COLOR_BUFFER_BIT);
 
     /*
-    ** ã“ã“ã§ OpenGL ã«ã‚ˆã‚‹æç”»ã‚’è¡Œã†
+    ** ‚±‚±‚Å OpenGL ‚É‚æ‚é•`‰æ‚ğs‚¤
     */
 
     glfwSwapBuffers();
