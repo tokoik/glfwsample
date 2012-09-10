@@ -19,6 +19,56 @@ static void term(void)
   glfwTerminate();
 }
 
+// シェーダオブジェクトのコンパイル結果を表示する
+static GLboolean printShaderInfoLog(GLuint shader, const char *str)
+{
+  // コンパイル結果を取得する
+  GLint status;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+  if (status == GL_FALSE) std::cerr << "Compile Error in " << str << std::endl;
+  
+  // シェーダのコンパイル時のログの長さを取得する
+  GLsizei bufSize;
+  glGetShaderiv(shader, GL_INFO_LOG_LENGTH , &bufSize);
+  
+  if (bufSize > 1)
+  {
+    // シェーダのコンパイル時のログの内容を取得する
+    GLchar *infoLog = new GLchar[bufSize];
+    GLsizei length;
+    glGetShaderInfoLog(shader, bufSize, &length, infoLog);
+    std::cerr << infoLog << std::endl;
+    delete[] infoLog;
+  }
+  
+  return (GLboolean)status;
+}
+ 
+// プログラムオブジェクトのリンク結果を表示する
+static GLboolean printProgramInfoLog(GLuint program)
+{
+  // リンク結果を取得する
+  GLint status;
+  glGetProgramiv(program, GL_LINK_STATUS, &status);
+  if (status == GL_FALSE) std::cerr << "Link Error." << std::endl;
+
+  // シェーダのリンク時のログの長さを取得する
+  GLsizei bufSize;
+  glGetProgramiv(program, GL_INFO_LOG_LENGTH , &bufSize);
+  
+  if (bufSize > 1)
+  {
+    // シェーダのリンク時のログの内容を取得する
+    GLchar *infoLog = new GLchar[bufSize];
+    GLsizei length;
+    glGetProgramInfoLog(program, bufSize, &length, infoLog);
+    std::cerr << infoLog << std::endl;
+    delete[] infoLog;
+  }
+  
+  return (GLboolean)status;
+}
+ 
 int main(int argc, const char * argv[])
 {
   // GLFW を初期化する
@@ -70,6 +120,7 @@ int main(int argc, const char * argv[])
   GLuint vobj = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vobj, sizeof vsrc / sizeof vsrc[0], vsrc, NULL);
   glCompileShader(vobj);
+  printShaderInfoLog(vobj, "vertex shader");
 
   // フラグメントシェーダのソースプログラムの作成
   static const GLchar *fsrc[] =
@@ -86,6 +137,7 @@ int main(int argc, const char * argv[])
   GLuint fobj = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fobj, sizeof fsrc / sizeof fsrc[0], fsrc, NULL);
   glCompileShader(fobj);
+  printShaderInfoLog(fobj, "fragment shader");
 
   // プログラムオブジェクトの作成
   GLuint program = glCreateProgram();
@@ -98,6 +150,7 @@ int main(int argc, const char * argv[])
   glBindAttribLocation(program, 1, "pv");
   glBindFragDataLocation(program, 0, "fc");
   glLinkProgram(program);
+  printProgramInfoLog(program);
 
   // 図形データ
   static const GLfloat pv[][2] =

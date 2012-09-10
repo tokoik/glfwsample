@@ -1743,10 +1743,15 @@ static bool readShaderSource(GLuint shader, const char *name)
 }
 
 /*
-** シェーダの情報を表示する
+** シェーダオブジェクトのコンパイル結果を表示する
 */
-static void printShaderInfoLog(GLuint shader)
+static GLboolean printShaderInfoLog(GLuint shader, const char *str)
 {
+  // コンパイル結果を取得する
+  GLint status;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+  if (status == GL_FALSE) std::cerr << "Compile Error in " << str << std::endl;
+
   // シェーダのコンパイル時のログの長さを取得する
   GLsizei bufSize;
   glGetShaderiv(shader, GL_INFO_LOG_LENGTH , &bufSize);
@@ -1757,16 +1762,23 @@ static void printShaderInfoLog(GLuint shader)
     GLchar *infoLog = new GLchar[bufSize];
     GLsizei length;
     glGetShaderInfoLog(shader, bufSize, &length, infoLog);
-    std::cerr << "InfoLog:\n" << infoLog << '\n' << std::endl;
+    std::cerr << infoLog << std::endl;
     delete[] infoLog;
   }
+
+  return (GLboolean)status;
 }
 
 /*
-** プログラムの情報を表示する
+** プログラムオブジェクトのリンク結果を表示する
 */
-static void printProgramInfoLog(GLuint program)
+static GLboolean printProgramInfoLog(GLuint program)
 {
+  // リンク結果を取得する
+  GLint status;
+  glGetProgramiv(program, GL_LINK_STATUS, &status);
+  if (status == GL_FALSE) std::cerr << "Link Error." << std::endl;
+
   // シェーダのリンク時のログの長さを取得する
   GLsizei bufSize;
   glGetProgramiv(program, GL_INFO_LOG_LENGTH , &bufSize);
@@ -1777,9 +1789,11 @@ static void printProgramInfoLog(GLuint program)
     GLchar *infoLog = new GLchar[bufSize];
     GLsizei length;
     glGetProgramInfoLog(program, bufSize, &length, infoLog);
-    std::cerr << "InfoLog:\n" << infoLog << '\n' << std::endl;
+    std::cerr << infoLog << std::endl;
     delete[] infoLog;
   }
+
+  return (GLboolean)status;
 }
 
 /*
@@ -1798,8 +1812,6 @@ GLuint gg::loadShader(
 
   if (program > 0)
   {
-    GLint compiled, linked; // コンパイル結果, リンク結果
-
     // バーテックスシェーダの作成
     GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
 
@@ -1813,11 +1825,8 @@ GLuint gg::loadShader(
 
     // バーテックスシェーダのコンパイル
     glCompileShader(vertShader);
-    glGetShaderiv(vertShader, GL_COMPILE_STATUS, &compiled);
-    printShaderInfoLog(vertShader);
-    if (compiled == GL_FALSE)
+    if (printShaderInfoLog(vertShader, vert) == GL_FALSE)
     {
-      std::cerr << "Error: Could not compile vertex shader source: " << vert << std::endl;
       glDeleteShader(vertShader);
       glDeleteProgram(program);
       return 0;
@@ -1842,11 +1851,8 @@ GLuint gg::loadShader(
 
       // フラグメントシェーダのコンパイル
       glCompileShader(fragShader);
-      glGetShaderiv(fragShader, GL_COMPILE_STATUS, &compiled);
-      printShaderInfoLog(fragShader);
-      if (compiled == GL_FALSE)
+      if (printShaderInfoLog(fragShader, frag) == GL_FALSE)
       {
-        std::cerr << "Error: Could not compile fragment shader source: " << frag << std::endl;
         glDeleteShader(fragShader);
         glDeleteProgram(program);
         return 0;
@@ -1872,11 +1878,8 @@ GLuint gg::loadShader(
 
       // ジオメトリシェーダのコンパイル
       glCompileShader(geomShader);
-      glGetShaderiv(geomShader, GL_COMPILE_STATUS, &compiled);
-      printShaderInfoLog(geomShader);
-      if (compiled == GL_FALSE)
+      if (printShaderInfoLog(geomShader, geom) == GL_FALSE)
       {
-        std::cerr << "Error: Could not compile geometry shader source: " << geom << std::endl;
         glDeleteShader(geomShader);
         glDeleteProgram(program);
         return 0;
@@ -1892,11 +1895,8 @@ GLuint gg::loadShader(
 
     // シェーダプログラムのリンク
     glLinkProgram(program);
-    glGetProgramiv(program, GL_LINK_STATUS, &linked);
-    printProgramInfoLog(program);
-    if (linked == GL_FALSE)
+    if (printProgramInfoLog(program) == GL_FALSE)
     {
-      std::cerr << "Error: Could not link shader program" << std::endl;
       glDeleteProgram(program);
       return 0;
     }
