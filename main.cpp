@@ -66,9 +66,6 @@ int main(int argc, const char * argv[])
     "}",
   };
 
-  // コンパイル／リンク結果
-  GLint status;
-
   // バーテックスシェーダのシェーダオブジェクト
   GLuint vobj = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vobj, sizeof vsrc / sizeof vsrc[0], vsrc, NULL);
@@ -98,7 +95,7 @@ int main(int argc, const char * argv[])
   glDeleteShader(fobj);
 
   // プログラムオブジェクトのリンク
-  glBindAttribLocation(program, 1, "pv");
+  glBindAttribLocation(program, 0, "pv");
   glBindFragDataLocation(program, 0, "fc");
   glLinkProgram(program);
 
