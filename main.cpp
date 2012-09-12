@@ -101,7 +101,7 @@ static GLuint createProgram(const char *vsrc, const char *pv, const char *fsrc, 
 }
 
 // 頂点配列オブジェクトの作成
-GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
+static GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
 {
   // 頂点配列オブジェクト
   GLuint vao;
