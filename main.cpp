@@ -84,7 +84,7 @@ static GLuint createProgram(const char *vsrc, const char *pv, const char *fsrc, 
   glCompileShader(fobj);
   printShaderInfoLog(fobj, "fragment shader");
 
-  // プログラムオブジェクトの作成
+  // シェーダオブジェクトの取り付け
   GLuint program = glCreateProgram();
   glAttachShader(program, vobj);
   glDeleteShader(vobj);
