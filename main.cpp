@@ -69,6 +69,7 @@ static GLboolean printProgramInfoLog(GLuint program)
   return (GLboolean)status;
 }
 
+// プログラムオブジェクトの作成
 static GLuint createProgram(void)
 {
   // バーテックスシェーダのソースプログラム
@@ -121,6 +122,31 @@ static GLuint createProgram(void)
   return program;
 }
 
+// 頂点配列オブジェクトの作成
+GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
+{
+  // 頂点配列オブジェクト
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  // 頂点バッファオブジェクト
+  GLuint vbo;
+  glGenBuffers(1, &vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof (GLfloat) * 2 * vertices, position, GL_STATIC_DRAW);
+
+  // 結合されている頂点バッファオブジェクトを attribute 変数から参照できるようにする
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+
+  // 頂点バッファオブジェクトと頂点配列オブジェクトの結合を解除する
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+
+  return vao;
+}
+
 int main(int argc, const char * argv[])
 {
   // GLFW を初期化する
@@ -157,37 +183,21 @@ int main(int argc, const char * argv[])
   // OpenGL の初期設定
   init();
 
-  // シェーダプログラムの作成
+  // プログラムオブジェクトの作成
   GLuint program = createProgram();
 
-  // 頂点配列オブジェクト
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
-  ggError("bind vertex array");
-
   // 図形データ
-  static const GLfloat pv[][2] =
+  static const GLfloat position[][2] =
   {
     { -0.9f, -0.9f },
     {  0.9f, -0.9f },
     {  0.9f,  0.9f },
     { -0.9f,  0.9f }
   };
+  static const int vertices = sizeof position / sizeof position[0];
 
-  // 頂点バッファオブジェクト
-  GLuint position;
-  glGenBuffers(1, &position);
-  glBindBuffer(GL_ARRAY_BUFFER, position);
-  glBufferData(GL_ARRAY_BUFFER, sizeof pv, pv, GL_STATIC_DRAW);
-  ggError("bind vertex buffer");
-
-  glVertexAttribPointer(0, sizeof pv[0] / sizeof pv[0][0], GL_FLOAT, GL_FALSE, 0, 0);
-  glEnableVertexAttribArray(0);
-  ggError("bind attrib pointer");
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
+  // 頂点配列オブジェクトの作成
+  GLuint vao = createObject(vertices, position);
 
   // 図形を表示する
   while (glfwGetWindowParam(GLFW_OPENED))
@@ -200,7 +210,7 @@ int main(int argc, const char * argv[])
 
     // 図形の描画
     glBindVertexArray(vao);
-    glDrawArrays(GL_LINE_LOOP, 0, sizeof pv / sizeof pv[0]);
+    glDrawArrays(GL_LINE_LOOP, 0, vertices);
     glBindVertexArray(0);
 
     // シェーダプログラムの使用終了
