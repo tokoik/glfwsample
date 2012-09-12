@@ -122,7 +122,7 @@ int main(int argc, const char * argv[])
   glCompileShader(vobj);
   printShaderInfoLog(vobj, "vertex shader");
 
-  // フラグメントシェーダのソースプログラムの作成
+  // フラグメントシェーダのソースプログラム
   static const GLchar *fsrc[] =
   {
     "#version 150 core\n",
@@ -152,6 +152,12 @@ int main(int argc, const char * argv[])
   glLinkProgram(program);
   printProgramInfoLog(program);
 
+  // 頂点配列オブジェクト
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+  ggError("bind vertex array");
+
   // 図形データ
   static const GLfloat pv[][2] =
   {
@@ -162,17 +168,18 @@ int main(int argc, const char * argv[])
   };
 
   // 頂点バッファオブジェクト
-  GLuint vbo;
-  glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  GLuint position;
+  glGenBuffers(1, &position);
+  glBindBuffer(GL_ARRAY_BUFFER, position);
   glBufferData(GL_ARRAY_BUFFER, sizeof pv, pv, GL_STATIC_DRAW);
+  ggError("bind vertex buffer");
 
-    // 頂点配列オブジェクト
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
   glVertexAttribPointer(0, sizeof pv[0] / sizeof pv[0][0], GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(0);
+  ggError("bind attrib pointer");
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
 
   // 図形を表示する
   while (glfwGetWindowParam(GLFW_OPENED))
@@ -186,6 +193,10 @@ int main(int argc, const char * argv[])
     // 図形の描画
     glBindVertexArray(vao);
     glDrawArrays(GL_LINE_LOOP, 0, sizeof pv / sizeof pv[0]);
+    glBindVertexArray(0);
+
+    // シェーダプログラムの使用終了
+    glUseProgram(0);
 
     glfwSwapBuffers();
   }
