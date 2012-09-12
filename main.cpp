@@ -50,7 +50,7 @@ static GLboolean printProgramInfoLog(GLuint program)
   // リンク結果を取得する
   GLint status;
   glGetProgramiv(program, GL_LINK_STATUS, &status);
-  if (status == GL_FALSE) std::cerr << "Link Error." << std::endl;
+  if (status == GL_FALSE) std::cerr << "Link Error" << std::endl;
 
   // シェーダのリンク時のログの長さを取得する
   GLsizei bufSize;
@@ -70,39 +70,17 @@ static GLboolean printProgramInfoLog(GLuint program)
 }
 
 // プログラムオブジェクトの作成
-static GLuint createProgram(void)
+static GLuint createProgram(const char *vsrc, const char *pv, const char *fsrc, const char *fc)
 {
-  // バーテックスシェーダのソースプログラム
-  static const GLchar *vsrc[] =
-  {
-    "#version 150 core\n",
-    "in vec4 pv;",
-    "void main(void)",
-    "{",
-    "  gl_Position = pv;",
-    "}",
-  };
-
   // バーテックスシェーダのシェーダオブジェクト
   GLuint vobj = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vobj, sizeof vsrc / sizeof vsrc[0], vsrc, NULL);
+  glShaderSource(vobj, 1, &vsrc, NULL);
   glCompileShader(vobj);
   printShaderInfoLog(vobj, "vertex shader");
 
-  // フラグメントシェーダのソースプログラム
-  static const GLchar *fsrc[] =
-  {
-    "#version 150 core\n",
-    "out vec4 fc;",
-    "void main(void)",
-    "{",
-    "  fc = vec4(1.0, 0.0, 0.0, 0.0);",
-    "}",
-  };
-
   // フラグメントシェーダのシェーダオブジェクトの作成
   GLuint fobj = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fobj, sizeof fsrc / sizeof fsrc[0], fsrc, NULL);
+  glShaderSource(fobj, 1, &fsrc, NULL);
   glCompileShader(fobj);
   printShaderInfoLog(fobj, "fragment shader");
 
@@ -114,8 +92,8 @@ static GLuint createProgram(void)
   glDeleteShader(fobj);
 
   // プログラムオブジェクトのリンク
-  glBindAttribLocation(program, 0, "pv");
-  glBindFragDataLocation(program, 0, "fc");
+  glBindAttribLocation(program, 0, pv);
+  glBindFragDataLocation(program, 0, fc);
   glLinkProgram(program);
   printProgramInfoLog(program);
 
@@ -183,8 +161,26 @@ int main(int argc, const char * argv[])
   // OpenGL の初期設定
   init();
 
+  // バーテックスシェーダのソースプログラム
+  static const GLchar vsrc[] =
+    "#version 150 core\n"
+    "in vec4 pv;\n"
+    "void main(void)\n"
+    "{\n"
+    "  gl_Position = pv;\n"
+    "}\n";
+  
+  // フラグメントシェーダのソースプログラム
+  static const GLchar fsrc[] =
+    "#version 150 core\n"
+    "out vec4 fc;\n"
+    "void main(void)\n"
+    "{\n"
+    "  fc = vec4(1.0, 0.0, 0.0, 0.0);\n"
+    "}\n";
+  
   // プログラムオブジェクトの作成
-  GLuint program = createProgram();
+  GLuint program = createProgram(vsrc, "pv", fsrc, "fc");
 
   // 図形データ
   static const GLfloat position[][2] =
