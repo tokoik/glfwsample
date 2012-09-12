@@ -68,7 +68,85 @@ static GLboolean printProgramInfoLog(GLuint program)
   
   return (GLboolean)status;
 }
- 
+
+// プログラムオブジェクトの作成
+static GLuint createProgram(void)
+{
+  // バーテックスシェーダのソースプログラム
+  static const GLchar *vsrc[] =
+  {
+    "#version 150 core\n",
+    "in vec4 pv;",
+    "void main(void)",
+    "{",
+    "  gl_Position = pv;",
+    "}",
+  };
+
+  // バーテックスシェーダのシェーダオブジェクト
+  GLuint vobj = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vobj, sizeof vsrc / sizeof vsrc[0], vsrc, NULL);
+  glCompileShader(vobj);
+  printShaderInfoLog(vobj, "vertex shader");
+
+  // フラグメントシェーダのソースプログラム
+  static const GLchar *fsrc[] =
+  {
+    "#version 150 core\n",
+    "out vec4 fc;",
+    "void main(void)",
+    "{",
+    "  fc = vec4(1.0, 0.0, 0.0, 0.0);",
+    "}",
+  };
+
+  // フラグメントシェーダのシェーダオブジェクトの作成
+  GLuint fobj = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fobj, sizeof fsrc / sizeof fsrc[0], fsrc, NULL);
+  glCompileShader(fobj);
+  printShaderInfoLog(fobj, "fragment shader");
+
+  // プログラムオブジェクトの作成
+  GLuint program = glCreateProgram();
+  glAttachShader(program, vobj);
+  glDeleteShader(vobj);
+  glAttachShader(program, fobj);
+  glDeleteShader(fobj);
+
+  // プログラムオブジェクトのリンク
+  glBindAttribLocation(program, 0, "pv");
+  glBindFragDataLocation(program, 0, "fc");
+  glLinkProgram(program);
+  printProgramInfoLog(program);
+
+  return program;
+}
+
+// 頂点配列オブジェクトの作成
+GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
+{
+  // 頂点配列オブジェクト
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  // 頂点バッファオブジェクト
+  GLuint vbo;
+  glGenBuffers(1, &vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof (GLfloat) * 2 * vertices, position, GL_STATIC_DRAW);
+
+  // 結合されている頂点バッファオブジェクトを attribute 変数から参照できるようにする
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(0);
+
+  // 頂点バッファオブジェクトと頂点配列オブジェクトの結合を解除する
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+
+  return vao;
+}
+
 int main(int argc, const char * argv[])
 {
   // GLFW を初期化する
@@ -105,74 +183,21 @@ int main(int argc, const char * argv[])
   // OpenGL の初期設定
   init();
 
-  // バーテックスシェーダのソースプログラム
-  static const GLchar *vsrc[] =
-  {
-    "#version 150 core\n",
-    "in vec4 pv;",
-    "void main(void)",
-    "{",
-    "  gl_Position = pv;",
-    "}",
-  };
-
-  // バーテックスシェーダのシェーダオブジェクト
-  GLuint vobj = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vobj, sizeof vsrc / sizeof vsrc[0], vsrc, NULL);
-  glCompileShader(vobj);
-  printShaderInfoLog(vobj, "vertex shader");
-
-  // フラグメントシェーダのソースプログラムの作成
-  static const GLchar *fsrc[] =
-  {
-    "#version 150 core\n",
-    "out vec4 fc;",
-    "void main(void)",
-    "{",
-    "  fc = vec4(1.0, 0.0, 0.0, 0.0);",
-    "}",
-  };
-
-  // フラグメントシェーダのシェーダオブジェクトの作成
-  GLuint fobj = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fobj, sizeof fsrc / sizeof fsrc[0], fsrc, NULL);
-  glCompileShader(fobj);
-  printShaderInfoLog(fobj, "fragment shader");
-
   // プログラムオブジェクトの作成
-  GLuint program = glCreateProgram();
-  glAttachShader(program, vobj);
-  glDeleteShader(vobj);
-  glAttachShader(program, fobj);
-  glDeleteShader(fobj);
-
-  // プログラムオブジェクトのリンク
-  glBindAttribLocation(program, 0, "pv");
-  glBindFragDataLocation(program, 0, "fc");
-  glLinkProgram(program);
-  printProgramInfoLog(program);
+  GLuint program = createProgram();
 
   // 図形データ
-  static const GLfloat pv[][2] =
+  static const GLfloat position[][2] =
   {
     { -0.9f, -0.9f },
     {  0.9f, -0.9f },
     {  0.9f,  0.9f },
     { -0.9f,  0.9f }
   };
+  static const int vertices = sizeof position / sizeof position[0];
 
-  // 頂点バッファオブジェクト
-  GLuint vbo;
-  glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof pv, pv, GL_STATIC_DRAW);
-
-    // 頂点配列オブジェクト
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
-  glVertexAttribPointer(0, sizeof pv[0] / sizeof pv[0][0], GL_FLOAT, GL_FALSE, 0, 0);
-  glEnableVertexAttribArray(0);
+  // 頂点配列オブジェクトの作成
+  GLuint vao = createObject(vertices, position);
 
   // 図形を表示する
   while (glfwGetWindowParam(GLFW_OPENED))
@@ -185,7 +210,11 @@ int main(int argc, const char * argv[])
 
     // 図形の描画
     glBindVertexArray(vao);
-    glDrawArrays(GL_LINE_LOOP, 0, sizeof pv / sizeof pv[0]);
+    glDrawArrays(GL_LINE_LOOP, 0, vertices);
+    glBindVertexArray(0);
+
+    // シェーダプログラムの使用終了
+    glUseProgram(0);
 
     glfwSwapBuffers();
   }
