@@ -9,13 +9,6 @@ static void init(void)
   glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 }
 
-// 終了処理
-static void term(void)
-{
-  // GLFW を終了する
-  glfwTerminate();
-}
-
 int main(int argc, const char * argv[])
 {
   // GLFW を初期化する
@@ -25,9 +18,6 @@ int main(int argc, const char * argv[])
     std::cerr << "Can't initialize GLFW." << std::endl;
     exit(EXIT_FAILURE);
   }
-
-  // 終了処理を登録する
-  atexit(term);
 
   // OpenGL Version 3.2 Core Profile を選択する
   glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
