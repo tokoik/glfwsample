@@ -175,10 +175,10 @@ int main(int argc, const char * argv[])
   // 図形データ
   static const GLfloat position[][2] =
   {
-    { -0.9f, -0.9f },
-    {  0.9f, -0.9f },
-    {  0.9f,  0.9f },
-    { -0.9f,  0.9f }
+    { -0.5f, -0.5f },
+    {  0.5f, -0.5f },
+    {  0.5f,  0.5f },
+    { -0.5f,  0.5f }
   };
   static const int vertices = sizeof position / sizeof position[0];
 
