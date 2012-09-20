@@ -19,6 +19,11 @@ int main(int argc, const char * argv[])
     exit(EXIT_FAILURE);
   }
 
+  // OpenGL Version 3.2 Core Profile を選択する
+  glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
+  glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
+  glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
   // GLFW のウィンドウを開く
   if (!glfwOpenWindow(0, 0, 0, 0, 0, 0, 0, 0, GLFW_WINDOW))
   {
