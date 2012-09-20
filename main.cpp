@@ -2,6 +2,13 @@
 #include <cstdlib>
 #include <GL/glfw.h>
 
+// ‰Šúİ’è
+static void init(void)
+{
+  // ”wŒiF
+  glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+}
+
 int main(int argc, const char * argv[])
 {
   // GLFW ‚ğ‰Šú‰»‚·‚é
@@ -19,6 +26,9 @@ int main(int argc, const char * argv[])
     std::cerr << "Can't open GLFW window." << std::endl;
     exit(EXIT_FAILURE);
   }
+
+  // OpenGL ‚Ì‰Šúİ’è
+  init();
 
   // }Œ`‚ğ•\¦‚·‚é
   while (glfwGetWindowParam(GLFW_OPENED))
