@@ -25,9 +25,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <iostream>
 #include <fstream>
-#include <cstdlib>
+#include <sstream>
 #include <cfloat>
 #include <cmath>
+#include <vector>
+#include <map>
+
 #include "gg.h"
 
 #if defined(_WIN32)
@@ -1337,83 +1340,142 @@ void gg::ggFBOError(const char *msg)
 }
 
 /*
-** テクスチャマッピング用の RAW 画像ファイルの読み込み
+** TGA ファイル (8/16/24/32bit) の読み込み
 */
-bool gg::loadImage(const char *name, int width, int height, GLenum internal)
+GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &format)
 {
-  // 戻り値
-  bool ret = true;
-
-  // ファイルフォーマット
-  GLenum format = GL_RGB;
-  
-  // テクスチャの読み込み先
-  char *image = 0;
-
-  // ファイル名 name が非 0 ならそのファイルを読み込む
-  if (name != 0)
+  // ファイルを開く
+  std::ifstream file(name, std::ios::binary);
+  if (file.fail())
   {
-    // テクスチャファイルを開く
-    std::ifstream file(name, std::ios::binary);
+    // 開けなかった
+    std::cerr << "Waring: Can't open file: " << name << std::endl;
+    return 0;
+  }
 
-    if (file.fail())
-    {
-      // 開けなかった
-      std::cerr << "Waring: Can't open texture file: " << name << std::endl;
-      ret = false;
-    }
-    else
-    {
-      // ファイルの末尾に移動し現在位置（＝ファイルサイズ）を得る
-      file.seekg(0L, std::ios::end);
-      GLsizei size = static_cast<GLsizei>(file.tellg());
+  // ヘッダの読み込み
+  unsigned char header[18];
+  file.read((char *)header, sizeof header);
+  if (file.bad())
+  {
+    // ヘッダの読み込みに失敗した
+    std::cerr << "Waring: Can't read file header: " << name << std::endl;
+    file.close();
+    return 0;
+  }
 
-      // テクスチャサイズ分のメモリを確保する
-      GLsizei maxsize = 0;
-      switch (internal)
-      {
-      case GL_RGBA:
-      case GL_RGBA32F:
-        maxsize = width * height * 4;
-        format = GL_RGBA;
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        break;
-      case GL_RGB:
-      case GL_RGB32F:
-        maxsize = width * height * 3;
-        break;
-      default:
-        ret = false;
-        break;
-      }
-      if (maxsize > 0)
-      {
-        try
-        {
-          image = new char[maxsize];
-        }
-        catch (std::bad_alloc e)
-        {
-          ret = false;
-        }
-        if (ret)
-        {
-          // ファイルを先頭から読み込む
-          file.seekg(0L, std::ios::beg);
-          file.read(image, (size < maxsize) ? size : maxsize);
-          
-          if (file.bad())
-          {
-            // うまく読み込めなかった
-            std::cerr << "Warning: Could not read texture file: " << name << std::endl;
-            ret = false;
-          }
-        }
-      }
-      
+  // 幅と高さ
+  width = header[13] << 8 | header[12];
+  height = header[15] << 8 | header[14];
+
+  // 深度
+  size_t depth = header[16] / 8;
+  switch (depth)
+  {
+    case 1:
+      format = GL_RED;
+      break;
+    case 2:
+      format = GL_RG;
+      break;
+    case 3:
+      format = GL_BGR;
+      break;
+    case 4:
+      format = GL_BGRA;
+      break;
+    default:
+      std::cerr << "Waring: Unusable format: " << depth << std::endl;
       file.close();
+      return 0;
+  }
+
+  // データサイズ
+  size_t size = width * height * depth;
+
+  // メモリの確保
+  GLubyte *buffer = 0;
+  try
+  {
+    buffer = new GLubyte[size];
+  }
+  catch (std::bad_alloc e)
+  {
+    // メモリが足らなかった
+    std::cerr << "Waring: Too large data: " << name << std::endl;
+    file.close();
+    return 0;
+  }
+
+  // データの読み込み
+  if (header[2] & 8)
+  {
+    // RLE
+    size_t p = 0;
+    char c;
+    while (file.get(c))
+    {
+      if (c & 0x80)
+      {
+        // run-length packet
+        size_t count = (c & 0x7f) + 1;
+        if (p + count * depth > size) break;
+        char tmp[4];
+        file.read(tmp, depth);
+        for (size_t i = 0; i < count; ++i)
+        {
+          memcpy((char *)(buffer + p), tmp, depth);
+          p += depth;
+        }
+      }
+      else
+      {
+        // raw packet
+        size_t count = (c + 1) * depth;
+        if (p + count > size) break;
+        file.read((char *)(buffer + p), count);
+        p += count;
+      }
     }
   }
+  else
+  {
+    // 非圧縮
+    file.read((char *)buffer, size);
+  }
+
+  // 読み込みチェック
+  if (file.bad())
+  {
+    // 読み込みに失敗した
+    std::cerr << "Waring: Can't read image data: " << name << std::endl;
+  }
+
+  // ファイルを閉じる
+  file.close();
+
+  return buffer;
+}
+
+/*
+** テクスチャマッピング用の TGA 画像ファイルの読み込み
+*/
+bool gg::loadImage(const char *name, GLenum internal)
+{
+  // 画像サイズ
+  GLsizei width, height;
+
+  // 画像フォーマット
+  GLenum format;
+
+  // 画像の読み込み先
+  GLubyte *image = loadTga(name, width, height, format);
+
+  // 画像が読み込めなかったら戻る
+  if (image == 0) return false;
+
+  // アルファチャンネルがついていれば 4 バイト境界に設定
+  glPixelStorei(GL_UNPACK_ALIGNMENT, (format == GL_BGRA) ? 4 : 1);
 
   // テクスチャを割り当てる
   glTexImage2D(GL_TEXTURE_2D, 0, internal, width, height, 0, format, GL_UNSIGNED_BYTE, image);
@@ -1427,87 +1489,64 @@ bool gg::loadImage(const char *name, int width, int height, GLenum internal)
   // 読み込みに使ったメモリを開放する
   delete[] image;
 
-  return ret;
+  return true;
 }
 
 /*
-** 高さマップ用の RAW 画像ファイルの読み込んで法線マップを作成する
+** 高さマップ用の TGA 画像ファイルの読み込んで法線マップを作成する
 */
-bool gg::loadHeight(const char *name, int width, int height, float nz)
+bool gg::loadHeight(const char *name, float nz)
 {
-  // 戻り値
-  bool ret = true;
+  // 画像サイズ
+  GLsizei width, height;
+
+  // 画像フォーマット
+  GLenum format;
+
+  // 画像の読み込み先
+  GLubyte *hmap = loadTga(name, width, height, format);
+
+  // 画像が読み込めなかったら戻る
+  if (hmap == 0) return false;
 
   // 作成する法線マップ
   GLfloat (*nmap)[4] = 0;
 
-  // テクスチャファイルを開く
-  std::ifstream file(name, std::ios::binary);
+  // メモリサイズ
+  GLsizei maxsize = width * height;
 
-  if (file.fail())
+  // メモリを確保する
+  try
   {
-    // 開けなかった
-    std::cerr << "Waring: Can't open texture file: " << name << std::endl;
-    ret = false;
+    nmap = new GLfloat[maxsize][4];
   }
-  else
+  catch (std::bad_alloc e)
   {
-    // ファイルの末尾に移動し現在位置（＝ファイルサイズ）を得る
-    file.seekg(0L, std::ios::end);
-    GLsizei size = static_cast<GLsizei>(file.tellg());
-
-    // メモリを確保する
-    GLsizei maxsize = width * height;
-    GLubyte *hmap = 0;
-    try
-    {
-      hmap = new GLubyte[maxsize];
-      nmap = new GLfloat[maxsize][4];
-    }
-    catch (std::bad_alloc e)
-    {
-      delete[] hmap;
-      ret = false;
-    }
-
-    if (ret)
-    {
-      // ファイルを先頭から読み込む
-      file.seekg(0L, std::ios::beg);
-      file.read(reinterpret_cast<char *>(hmap), (size < maxsize) ? size : maxsize);
-      
-      if (file.bad())
-      {
-        // うまく読み込めなかった
-        std::cerr << "Warning: Could not read texture file: " << name << std::endl;
-        ret = false;
-      }
-    }
-    
-    file.close();
-
-    // 法線マップの作成
-    for (GLsizei i = 0; i < maxsize; ++i)
-    {
-      int x = i % width, y = i - x;
-
-      // 隣接する画素との値の差を法線ベクトルの成分に用いる
-      float nx = static_cast<float>(hmap[y + (x + 1) % width] - hmap[i]);
-      float ny = static_cast<float>(hmap[(y + width) % maxsize + x] - hmap[i]);
-
-      // 法線ベクトルの長さを求めておく
-      float nl = sqrt(nx * nx + ny * ny + nz * nz);
-
-      // 法線ベクトルを求める
-      nmap[i][0] = nx * 0.5f / nl + 0.5f;
-      nmap[i][1] = ny * 0.5f / nl + 0.5f;
-      nmap[i][2] = nz * 0.5f / nl + 0.5f;
-      nmap[i][3] = hmap[i] * 0.0039215686f; // = 1/255
-    }
-
-    // 高さマップの読み込みに使ったメモリを開放する
     delete[] hmap;
+    return false;
   }
+
+  // 法線マップの作成
+  for (GLsizei i = 0; i < maxsize; ++i)
+  {
+    int x = i % width, y = i - x;
+
+    // 隣接する画素との値の差を法線の成分に用いる
+    float nx = static_cast<float>(hmap[y + (x + 1) % width] - hmap[i]);
+    float ny = static_cast<float>(hmap[(y + width) % maxsize + x] - hmap[i]);
+
+    // 法線の長さを求めておく
+    float nl = sqrt(nx * nx + ny * ny + nz * nz);
+
+    // 法線を求める
+    nmap[i][0] = nx * 0.5f / nl + 0.5f;
+    nmap[i][1] = ny * 0.5f / nl + 0.5f;
+    nmap[i][2] = nz * 0.5f / nl + 0.5f;
+    nmap[i][3] = hmap[i] * 0.0039215686f; // = 1/255
+  }
+
+  // 高さマップの読み込みに使ったメモリを開放する
+  delete[] hmap;
 
   // nmap が GLfloat なので 4 バイト境界に設定
   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -1524,7 +1563,7 @@ bool gg::loadHeight(const char *name, int width, int height, float nz)
   // 法線マップの作成に使ったメモリを解放する
   delete[] nmap;
 
-  return ret;
+  return true;
 }
 
 /*
@@ -1532,41 +1571,60 @@ bool gg::loadHeight(const char *name, int width, int height, float nz)
 */
 bool gg::loadObj(const char *name, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&norm)[3], GLuint &nf, GLuint (*&face)[3], bool normalize)
 {
-  // ファイルの読み込み
+  // OBJ ファイルの読み込み
   std::ifstream file(name, std::ios::binary);
   if (file.fail())
   {
-    std::cerr << "Can't open file: " << name << std::endl;
+    std::cerr << "Error: Can't open OBJ file: " << name << std::endl;
     return false;
   }
 
-  // データの数と座標値の最小値・最大値を調べる
-  char buf[1024];
+  // 一行読み込み用のバッファ
+  std::string line;
+
+  // データの数と座標値の最小値・最大値
   float xmin, xmax, ymin, ymax, zmin, zmax;
   xmax = ymax = zmax = -(xmin = ymin = zmin = FLT_MAX);
   nv = nf = 0;
-  while (file.getline(buf, sizeof buf))
+
+  // データを読み込む
+  while (std::getline(file, line))
   {
-    if (buf[0] == 'v' && buf[1] == ' ')
+    std::istringstream str(line);
+    std::string op;
+    str >> op;
+
+    if (op == "v")
     {
+      // 頂点位置
       float x, y, z;
-      sscanf(buf, "%*s %f %f %f", &x, &y, &z);
+
+      // 頂点位置はスペースで区切られている
+      str >> x >> y >> z;
+
+      // 位置の最大値と最小値を求める (AABB)
       if (x < xmin) xmin = x;
       if (x > xmax) xmax = x;
+
       if (y < ymin) ymin = y;
       if (y > ymax) ymax = y;
+
       if (z < zmin) zmin = z;
       if (z > zmax) zmax = z;
+
+      // 頂点数のカウント
       ++nv;
     }
-    else if (buf[0] == 'f' && buf[1] == ' ')
+    else if (op == "f")
     {
+      // 面数のカウント
       ++nf;
     }
   }
 
   // メモリの確保
-  GLfloat (*fnorm)[3] = vert = norm = 0;
+  GLfloat (*fnorm)[3] = 0;
+  vert = norm = 0;
   face = 0;
   try
   {
@@ -1580,11 +1638,13 @@ bool gg::loadObj(const char *name, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&n
     delete[] vert;
     delete[] norm;
     delete[] face;
+    vert = norm = 0;
+    face = 0;
     file.close();
     return false;
   }
 
-  // 正規化
+  // 位置と大きさの正規化のための係数
   GLfloat scale, cx, cy, cz;
   if (normalize)
   {
@@ -1598,8 +1658,9 @@ bool gg::loadObj(const char *name, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&n
     cx = (xmax + xmin) * 0.5f;
     cy = (ymax + ymin) * 0.5f;
     cz = (zmax + zmin) * 0.5f;
-  }    
-  else {
+  }
+  else
+  {
     scale = 1.0f;
     cx = cy = cz = 0.0f;
   }
@@ -1610,34 +1671,60 @@ bool gg::loadObj(const char *name, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&n
 
   // データの読み込み
   nv = nf = 0;
-  while (file.getline(buf, sizeof buf))
+  while (std::getline(file, line))
   {
-    if (buf[0] == 'v' && buf[1] == ' ')
+    std::istringstream str(line);
+    std::string op;
+    str >> op;
+
+    if (op == "v")
     {
+      // 頂点位置
       float x, y, z;
-      sscanf(buf, "%*s %f %f %f", &x, &y, &z);
+
+      // 頂点位置はスペースで区切られている
+      str >> x >> y >> z;
+
+      // 位置と大きさの正規化
       vert[nv][0] = (x - cx) * scale;
       vert[nv][1] = (y - cy) * scale;
       vert[nv][2] = (z - cz) * scale;
+
+      // 頂点数のカウント
       ++nv;
     }
-    else if (buf[0] == 'f' && buf[1] == ' ')
+    else if (op == "f")
     {
-      if (sscanf(buf + 2, "%d/%*d/%*d %d/%*d/%*d %d/%*d/%*d", face[nf], face[nf] + 1, face[nf] + 2) != 3)
-        if (sscanf(buf + 2, "%d//%*d %d//%*d %d//%*d", face[nf], face[nf] + 1, face[nf] + 2) != 3)
-          sscanf(buf + 2, "%d %d %d", face[nf], face[nf] + 1, face[nf] + 2);
-      --face[nf][0];
-      --face[nf][1];
-      --face[nf][2];
+      // 頂点座標番号
+      std::string l, m, n;
+
+      // 頂点座標番号/テクスチャ座標番号/法線番号の組を取り出す
+      str >> l >> m >> n;
+
+      // 頂点座標番号だけ整数化する
+      face[nf][0] = atoi(l.c_str()) - 1;
+      face[nf][1] = atoi(m.c_str()) - 1;
+      face[nf][2] = atoi(n.c_str()) - 1;
+
+      // 面数のカウント
       ++nf;
     }
   }
 
-  // 面法線ベクトルの算出
-  for (unsigned int f = 0; f < nf; ++f)
+  // ファイルの読み込みチェック
+  if (file.bad())
+  {
+    // うまく読み込めなかった
+    std::cerr << "Warning: Can't read OBJ file: " << name << std::endl;
+  }
+  file.close();
+
+  // 面法線の算出
+  for (GLuint f = 0; f < nf; ++f)
   {
     GLuint v0 = face[f][0], v1 = face[f][1], v2 = face[f][2];
 
+    // v1 - v0, v2 - v0 を求める
     GLfloat dx1 = vert[v1][0] - vert[v0][0];
     GLfloat dy1 = vert[v1][1] - vert[v0][1];
     GLfloat dz1 = vert[v1][2] - vert[v0][2];
@@ -1645,26 +1732,30 @@ bool gg::loadObj(const char *name, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&n
     GLfloat dy2 = vert[v2][1] - vert[v0][1];
     GLfloat dz2 = vert[v2][2] - vert[v0][2];
 
-    // 外積
+    // 外積により面法線を求める
     fnorm[f][0] = dy1 * dz2 - dz1 * dy2;
     fnorm[f][1] = dz1 * dx2 - dx1 * dz2;
     fnorm[f][2] = dx1 * dy2 - dy1 * dx2;
   }
 
-  // 頂点の法線ベクトルの値を 0 にしておく
-  for (unsigned int v = 0; v < nv; ++v)
-    norm[v][0] = norm[v][1] = norm[v][2] = 0.0f;
-
-  // 面の法線ベクトルを頂点の法線ベクトルに積算する
-  for (unsigned int f = 0; f < nf; ++f)
+  // 頂点法線の値を 0 にしておく
+  for (GLuint v = 0; v < nv; ++v)
   {
+    norm[v][0] = norm[v][1] = norm[v][2] = 0.0f;
+  }
+
+  // 頂点法線の算出
+  for (GLuint f = 0; f < nf; ++f)
+  {
+    // 頂点座標番号
     GLuint v0 = face[f][0], v1 = face[f][1], v2 = face[f][2];
 
+    // 面法線
     GLfloat x = fnorm[f][0];
     GLfloat y = fnorm[f][1];
     GLfloat z = fnorm[f][2];
 
-    // 積算
+    // 面法線を頂点法線に積算する
     norm[v0][0] += x;
     norm[v0][1] += y;
     norm[v0][2] += z;
@@ -1678,17 +1769,506 @@ bool gg::loadObj(const char *name, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&n
     norm[v2][2] += z;
   }
 
-  // 頂点の法線ベクトルの正規化
-  for (unsigned int v = 0; v < nv; ++v)
+  // 頂点法線の正規化
+  for (GLuint v = 0; v < nv; ++v)
   {
+    // 頂点法線の長さ
     GLfloat a = sqrt(norm[v][0] * norm[v][0] + norm[v][1] * norm[v][1] + norm[v][2] * norm[v][2]);
 
+    // 頂点法線の正規化
     if (a != 0.0)
     {
       norm[v][0] /= a;
       norm[v][1] /= a;
       norm[v][2] /= a;
     }
+  }
+
+  return true;
+}
+
+// マテリアル
+struct rgb { float r, g, b; };
+struct mat
+{
+  rgb ka;       // ambient
+  rgb kd;       // diffuse
+  rgb ks;       // specular
+  float kshi;   // shininess
+};
+
+// 読み込み用のテンポラリデータの形式
+struct vec      // ベクトル
+{
+  float x, y, z;
+};
+struct vtx      // 頂点属性
+{
+  vec pos;      // 頂点位置
+  vec norm;     // 頂点法線
+};
+struct fac      // 面データ
+{
+  GLuint v[3];  // 頂点番号
+  GLuint n[3];  // 法線番号
+  vec norm;     // 面法線
+};
+struct grp      // 面グループ
+{
+  GLuint b;     // 面グループの開始番号
+  GLuint c;     // 面グループの頂点数
+  const mat *m; // 面グループのマテリアル
+  grp(GLuint begin, GLuint count, const mat &material)
+  {
+    b = begin;
+    c = count;
+    m = &material;
+  }
+};
+
+/*
+** 三角形分割された OBJ ファイルと MTL ファイルを読み込む
+*/
+bool gg::loadObj(const char *name, GLuint &ng, GLuint (*&group)[2], GLfloat (*&ka)[4], GLfloat (*&kd)[4], GLfloat (*&ks)[4], GLfloat *&kshi, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&norm)[3], bool normalize)
+{
+  // ファイルパスからディレクトリ名を取り出す
+  std::string path(name);
+  size_t pos = path.find_last_of("/\\");
+  std::string dirname = (pos == std::string::npos) ? "" : path.substr(pos + 1);
+
+  // OBJ ファイルの読み込み
+  std::ifstream file(path.c_str());
+  if (file.fail())
+  {
+    std::cerr << "Error: Can't open OBJ file: " << path << std::endl;
+    return false;
+  }
+
+  // マテリアル
+  std::map<std::string, mat> mtl;
+  static const char defmtl[] = "Default";
+  std::string mtlname(defmtl);
+
+  // デフォルトのマテリアル
+  mtl[mtlname].ka.r = 0.1f;
+  mtl[mtlname].ka.g = 0.1f;
+  mtl[mtlname].ka.b = 0.1f;
+  mtl[mtlname].kd.r = 0.6f;
+  mtl[mtlname].kd.g = 0.6f;
+  mtl[mtlname].kd.b = 0.6f;
+  mtl[mtlname].ks.r = 0.3f;
+  mtl[mtlname].ks.g = 0.3f;
+  mtl[mtlname].ks.b = 0.3f;
+  mtl[mtlname].kshi = 40.0f;
+
+  // 読み込み用の一時記憶領域
+  std::vector<vec> _norm;
+  std::vector<vtx> _vert;
+  std::vector<fac> _face;
+  std::vector<grp> _group;
+
+  // 座標値の最小値・最大値
+  GLuint groupbegin = 0;
+  float xmin, xmax, ymin, ymax, zmin, zmax;
+  xmax = ymax = zmax = -(xmin = ymin = zmin = FLT_MAX);
+
+  // 一行読み込み用のバッファ
+  std::string line;
+
+  // データの読み込み
+  while (std::getline(file, line))
+  {
+    // １行取り出して最初のトークンを命令 (op) とみなす
+    std::istringstream str(line);
+    std::string op;
+    str >> op;
+
+    if (op == "v")
+    {
+      // 頂点位置
+      vtx v;
+
+      // 頂点位置はスペースで区切られている
+      str >> v.pos.x >> v.pos.y >> v.pos.z;
+
+      // 頂点位置の最小値と最大値を求める
+      if (v.pos.x < xmin) xmin = v.pos.x;
+      if (v.pos.x > xmax) xmax = v.pos.x;
+
+      if (v.pos.y < ymin) ymin = v.pos.y;
+      if (v.pos.y > ymax) ymax = v.pos.y;
+
+      if (v.pos.z < zmin) zmin = v.pos.z;
+      if (v.pos.z > zmax) zmax = v.pos.z;
+
+      // 頂点位置を記録する
+      _vert.push_back(v);
+    }
+    else if (op == "vn")
+    {
+      // 頂点法線
+      vec norm;
+
+      // 頂点法線はスペースで区切られている
+      str >> norm.x >> norm.y >> norm.z;
+
+      // 頂点法線を記録する
+      _norm.push_back(norm);
+    }
+    else if (op == "f")
+    {
+      // 面 (三角形) データ
+      fac f;
+
+      //　三頂点のそれぞれについて
+      for (int i = 0; i < 3; ++i)
+      {
+        // １項目取り出す
+        std::string tmp;
+        str >> tmp;
+
+        // 項目の最初の要素は頂点座標番号 (0 から始まる)
+        f.v[i] = atoi(tmp.c_str()) - 1;
+        f.n[i] = 0;
+
+        // 残りの項目を取り出す
+        size_t pos = tmp.find('/', 0);
+        if (pos != std::string::npos)
+        {
+          // 二つ目の項目は飛ばす
+          pos = tmp.find('/', pos + 1);
+          if (pos != std::string::npos)
+          {
+            // 三つ目の項目は法線番号 (0 なら法線の割り当てなし)
+            f.n[i] = atoi(tmp.substr(pos + 1).c_str());
+          }
+        }
+      }
+
+      // 面データの記録ｊ
+      _face.push_back(f);
+    }
+    else if (op == "usemtl")
+    {
+      // 面グループの面数
+      GLuint groupcount = static_cast<GLuint>(_face.size()) * 3 - groupbegin;
+      if (groupcount > 0)
+      {
+        // 面グループの頂点データの開始番号と数，およびそのマテリアルを記録する
+        grp b(groupbegin, groupcount, mtl[mtlname]);
+        _group.push_back(b);
+
+        // 次の面グループの開始番号を求めておく
+        groupbegin += groupcount;
+      }
+
+      // マテリアル名の取り出し
+      str >> mtlname;
+
+      // マテリアルの存在チェック
+      if (mtl.find(mtlname) == mtl.end())
+      {
+        std::cerr << "Warning: Undefined material: " << mtlname << std::endl;
+        mtlname = defmtl;
+      }
+      else
+      {
+        std::cerr << "usemtl: " << mtlname << std::endl;
+      }
+    }
+    else if (op == "mtllib")
+    {
+      // MTL ファイルのパス名を作る
+      str >> std::ws;
+      std::string mtlpath;
+      std::getline(str, mtlpath);
+      mtlpath = dirname + mtlpath;
+
+      // MTL ファイルの読み込み
+      std::ifstream mtlfile(mtlpath.c_str(), std::ios::binary);
+      if (mtlfile.fail())
+      {
+        std::cerr << "Warning: Can't open MTL file: " << mtlpath << std::endl;
+      }
+      else
+      {
+        // 一行読み込み用のバッファ
+        std::string mtlline;
+
+        // マテリアルデータを読み込む
+        while (std::getline(mtlfile, mtlline))
+        {
+          std::istringstream mtlstr(mtlline);
+          std::string mtlop;
+          mtlstr >> mtlop;
+
+          if (mtlop == "newmtl")
+          {
+            // 新規マテリアル名を出力する
+            mtlstr >> mtlname;
+            std::cerr << "newmtl: " << mtlname << std::endl;
+          }
+          else if (mtlop == "Ka")
+          {
+            // 環境光の反射係数を登録する
+            mtlstr >> mtl[mtlname].ka.r >> mtl[mtlname].ka.g >> mtl[mtlname].ka.b;
+          }
+          else if (mtlop == "Kd")
+          {
+            // 拡散反射係数を登録する
+            mtlstr >> mtl[mtlname].kd.r >> mtl[mtlname].kd.g >> mtl[mtlname].kd.b;
+          }
+          else if (mtlop == "Ks")
+          {
+            // 鏡面反射係数を登録する
+            mtlstr >> mtl[mtlname].ks.r >> mtl[mtlname].ks.g >> mtl[mtlname].ks.b;
+          }
+          else if (mtlop == "Ns")
+          {
+            // 輝き係数を登録する
+            float kshi;
+            mtlstr >> kshi;
+            mtl[mtlname].kshi = kshi * 0.1f;
+          }
+        }
+
+        // MTL ファイルの読み込みチェック
+        if (mtlfile.bad())
+        {
+          // MTL ファイルをうまく読み込めなかった
+          std::cerr << "Warning: Can't read MTL file: " << mtlpath << std::endl;
+        }
+        mtlfile.close();
+      }
+    }
+  }
+
+  // ファイルの読み込みチェック
+  if (file.bad())
+  {
+    // OBJ ファイルをうまく読み込めなかった
+    std::cerr << "Warning: Can't read OBJ file: " << path << std::endl;
+  }
+  else
+  {
+    // 最後の面グループの面数
+    GLuint groupcount = static_cast<GLuint>(_face.size()) * 3 - groupbegin;
+    if (groupcount > 0)
+    {
+      // 最後の面グループの頂点データの開始番号と数，およびそのマテリアルを記録する
+      grp b(groupbegin, groupcount, mtl[mtlname]);
+      _group.push_back(b);
+    }
+  }
+  file.close();
+
+  // 必要な面数，頂点数，グループ数
+  GLuint nf = static_cast<GLuint>(_face.size());
+  nv = nf * 3;
+  ng = static_cast<GLuint>(_group.size());
+
+  // メモリの確保
+  group = 0;
+  ka = kd = ks = 0;
+  kshi = 0;
+  vert = norm = 0;
+  try
+  {
+    group = new GLuint[ng][2];
+    ka = new GLfloat[ng][4];
+    kd = new GLfloat[ng][4];
+    ks = new GLfloat[ng][4];
+    kshi = new GLfloat[ng];
+    vert = new GLfloat[nv][3];
+    norm = new GLfloat[nv][3];
+  }
+  catch (std::bad_alloc e)
+  {
+    delete[] group;
+    delete[] ka;
+    delete[] kd;
+    delete[] ks;
+    delete[] kshi;
+    delete[] vert;
+    delete[] norm;
+    group = 0;
+    ka = kd = ks = 0;
+    kshi = 0;
+    vert = norm = 0;
+    return false;
+  }
+
+  // 位置と大きさを正規化するための係数
+  GLfloat scale, cx, cy, cz;
+  if (normalize)
+  {
+    float sx = xmax - xmin;
+    float sy = ymax - ymin;
+    float sz = zmax - zmin;
+    scale = sx;
+    if (sy > scale) scale = sy;
+    if (sz > scale) scale = sz;
+    scale = (scale != 0.0f) ? 1.0f / scale : 1.0f;
+    cx = (xmax + xmin) * 0.5f;
+    cy = (ymax + ymin) * 0.5f;
+    cz = (zmax + zmin) * 0.5f;
+  }
+  else
+  {
+    scale = 1.0f;
+    cx = cy = cz = 0.0f;
+  }
+
+  // 面法線の算出
+  for (std::vector<fac>::iterator f = _face.begin(); f != _face.end(); ++f)
+  {
+    // 頂点座標番号
+    GLuint v0 = f->v[0], v1 = f->v[1], v2 = f->v[2];
+
+    // v1 - v0, v2 - v0 を求める
+    GLfloat dx1 = _vert[v1].pos.x - _vert[v0].pos.x;
+    GLfloat dy1 = _vert[v1].pos.y - _vert[v0].pos.y;
+    GLfloat dz1 = _vert[v1].pos.z - _vert[v0].pos.z;
+    GLfloat dx2 = _vert[v2].pos.x - _vert[v0].pos.x;
+    GLfloat dy2 = _vert[v2].pos.y - _vert[v0].pos.y;
+    GLfloat dz2 = _vert[v2].pos.z - _vert[v0].pos.z;
+
+    // 外積により面法線を求める
+    f->norm.x = dy1 * dz2 - dz1 * dy2;
+    f->norm.y = dz1 * dx2 - dx1 * dz2;
+    f->norm.z = dx1 * dy2 - dy1 * dx2;
+  }
+
+  // 頂点法線の値を 0 にしておく
+  for (std::vector<vtx>::iterator v = _vert.begin(); v != _vert.end(); ++v)
+  {
+    v->norm.x = v->norm.y = v->norm.z = 0.0f;
+  }
+
+  // 頂点法線の算出
+  for (std::vector<fac>::iterator f = _face.begin(); f != _face.end(); ++f)
+  {
+    // 頂点座標番号
+    GLuint v0 = f->v[0], v1 = f->v[1], v2 = f->v[2];
+
+    // 面法線
+    GLfloat x = f->norm.x;
+    GLfloat y = f->norm.y;
+    GLfloat z = f->norm.z;
+
+    // 面法線を頂点法線に積算する
+    _vert[v0].norm.x += x;
+    _vert[v0].norm.y += y;
+    _vert[v0].norm.z += z;
+
+    _vert[v1].norm.x += x;
+    _vert[v1].norm.y += y;
+    _vert[v1].norm.z += z;
+
+    _vert[v2].norm.x += x;
+    _vert[v2].norm.y += y;
+    _vert[v2].norm.z += z;
+  }
+
+  // 頂点法線の正規化
+  for (std::vector<vtx>::iterator v = _vert.begin(); v != _vert.end(); ++v)
+  {
+    // 頂点法線の長さ
+    GLfloat a = sqrt(v->norm.x * v->norm.x + v->norm.y * v->norm.y + v->norm.z * v->norm.z);
+
+    // 頂点法線を正規化する
+    if (a != 0.0)
+    {
+      v->norm.x /= a;
+      v->norm.y /= a;
+      v->norm.z /= a;
+    }
+  }
+
+  // 面ごとの頂点データの作成
+  nv = 0;
+  for (std::vector<fac>::iterator f = _face.begin(); f != _face.end(); ++f)
+  {
+    // 面法線
+    GLfloat x = f->norm.x, y = f->norm.y, z = f->norm.z;
+
+    // 面法線の長さ
+    GLfloat a = sqrt(x * x + y * y + z * z);
+
+    // 面法線の正規化
+    if (a != 0.0)
+    {
+      x /= a;
+      y /= a;
+      z /= a;
+    }
+
+    // 三頂点のそれぞれについて
+    for (int i = 0; i < 3; ++i)
+    {
+      // 頂点座標番号と頂点法線番号
+      GLuint fv = f->v[i], fn = f->n[i];
+
+      // 頂点座標を正規化して登録
+      vert[nv][0] = (_vert[fv].pos.x - cx) * scale;
+      vert[nv][1] = (_vert[fv].pos.y - cy) * scale;
+      vert[nv][2] = (_vert[fv].pos.z - cz) * scale;
+
+      // 法線番号が 0 なら
+      if (fn == 0)
+      {
+        // 面法線を頂点法線とする
+        norm[nv][0] = x;
+        norm[nv][1] = y;
+        norm[nv][2] = z;
+      }
+      else
+      {
+        // 読み込まれた頂点法線を使う
+        --fn;
+        norm[nv][0] = _norm[fn].x;
+        norm[nv][1] = _norm[fn].y;
+        norm[nv][2] = _norm[fn].z;
+      }
+
+      // 頂点数のカウント
+      ++nv;
+    }
+  }
+
+  // 面グループデータの作成
+  ng = 0;
+  for (std::vector<grp>::iterator g = _group.begin(); g != _group.end(); ++g)
+  {
+    // 面グループの最初の頂点位置番号
+    group[ng][0] = g->b;
+
+    // 面グループの頂点データの数
+    group[ng][1] = g->c;
+
+    // 面グループの環境光に対する反射係数
+    ka[ng][0] = g->m->ka.r;
+    ka[ng][1] = g->m->ka.g;
+    ka[ng][2] = g->m->ka.b;
+    ka[ng][3] = 1.0f;
+
+    // 面グループの拡散反射係数
+    kd[ng][0] = g->m->kd.r;
+    kd[ng][1] = g->m->kd.g;
+    kd[ng][2] = g->m->kd.b;
+    kd[ng][3] = 1.0f;
+
+    // 面グループの鏡面反射係数
+    ks[ng][0] = g->m->ks.r;
+    ks[ng][1] = g->m->ks.g;
+    ks[ng][2] = g->m->ks.b;
+    ks[ng][3] = 1.0f;
+
+    // 面グループの輝き係数
+    kshi[ng] = g->m->kshi;
+
+    // 面グループの数
+    ++ng;
   }
 
   return true;
@@ -2728,10 +3308,10 @@ gg::GgPoints *gg::ggPointSphere(GLuint nv, GLfloat cx, GLfloat cy, GLfloat cz, G
 
   // ポイントの作成
   GgPoints *points = new gg::GgPoints(nv, vert);
-  
+
   // 作業用のメモリの解放
   delete[] vert;
-  
+
   return points;
 }
 
@@ -2805,7 +3385,7 @@ gg::GgTriangles *gg::ggEllipse(GLfloat width, GLfloat height, GLuint slices)
     norm[v][1] = 0.0f;
     norm[v][2] = 1.0f;
   } 
-  
+
   // ポリゴンの作成
   GgTriangles *ellipse = new gg::GgTriangles(slices, vert, norm);
   ellipse->setMode(GL_TRIANGLE_FAN);
@@ -2842,7 +3422,7 @@ gg::GgTriangles *gg::ggObjArray(const char *name, bool normalize)
   }
 
   // 頂点データを各三角形の頂点に分配する
-  for (unsigned int f = 0; f < nf; ++f)
+  for (GLuint f = 0; f < nf; ++f)
   {
     GLuint f0 = f * 3, f1 = f0 + 1, f2 = f1 + 1;
     GLuint v0 = face[f][0], v1 = face[f][1], v2 = face[f][2];
@@ -2883,7 +3463,7 @@ gg::GgTriangles *gg::ggObjArray(const char *name, bool normalize)
   delete[] face;
   delete[] fnorm;
   delete[] fvert;
-  
+
   return obj;
 }
 
@@ -2905,6 +3485,6 @@ gg::GgObject *gg::ggObj(const char *name, bool normalize)
   delete[] vert;
   delete[] norm;
   delete[] face;
-  
+
   return obj;
 }

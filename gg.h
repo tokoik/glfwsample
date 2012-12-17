@@ -692,19 +692,30 @@ namespace gg
     );
 
   /*
-  ** テクスチャマッピング用の RAW 画像ファイルの読み込み
+  ** TGA ファイル (8/16/24/32bit) の読み込み
   */
-  extern bool loadImage(const char *name, int width, int height, GLenum internal);
+  extern GLubyte *loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &format);
 
   /*
-  ** 高さマップ用の RAW 画像ファイルの読み込んで法線マップを作成する
+  ** テクスチャマッピング用の TGA 画像ファイルの読み込み
   */
-  extern bool loadHeight(const char *name, int width, int height, float nz);
+  extern bool loadImage(const char *name, GLenum internal);
+
+  /*
+  ** 高さマップ用の TGA 画像ファイルの読み込んで法線マップを作成する
+  */
+  extern bool loadHeight(const char *name, float nz);
 
   /*
   ** 三角形分割された OBJ ファイルを読み込む
   */
   extern bool loadObj(const char *name, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&norm)[3], GLuint &nf, GLuint (*&face)[3], bool normalize);
+
+  /*
+  ** 三角形分割された OBJ ファイルと MTL ファイルを読み込む
+  */
+  extern bool loadObj(const char *name, GLuint &ng, GLuint (*&group)[2], GLfloat (*&ka)[4], GLfloat (*&kd)[4], GLfloat (*&ks)[4], GLfloat *&kshi, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&norm)[3], bool normalize);
+
 
   /*
   ** 基底クラス
@@ -1322,7 +1333,7 @@ namespace gg
     : public Gg
   {
     friend class GgAttribute;
-    
+
     // 参照カウント
     unsigned int count;
 
@@ -1380,7 +1391,7 @@ namespace gg
     {
       inc();
     }
-    
+
     // 代入
     GgAttribute &operator=(const GgAttribute &o)
     {
@@ -1417,10 +1428,10 @@ namespace gg
     {
       glGenTextures(1, &texture);
     }
-    GgTexture(const char *name, int width, int height, GLenum internal = GL_RGB)
+    GgTexture(const char *name, GLenum internal = GL_RGB)
     {
       glGenTextures(1, &texture);
-      load(name, width, height, internal);
+      load(name, internal);
     }
     GgTexture(const GgTexture &o)
       : GgAttribute(o), texture(o.texture) {}
@@ -1437,11 +1448,11 @@ namespace gg
     }
 
     // 拡散反射色テクスチャを読み込む
-    //     name: ファイル名, width, height: 幅と高さ (2^n), internal: GL_RGB か GL_RGBA
-    void load(const char *name, int width, int height, GLenum internal = GL_RGB) const
+    //     name: ファイル名, internal: GL_RGB か GL_RGBA
+    void load(const char *name, GLenum internal = GL_RGB) const
     {
       glBindTexture(GL_TEXTURE_2D, texture);
-      loadImage(name, width, height, internal);
+      loadImage(name, internal);
       glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -1468,7 +1479,7 @@ namespace gg
       return texture;
     }
   };
-  
+
   /*
   ** 法線マップ
   **
@@ -1485,13 +1496,12 @@ namespace gg
     // コンストラクタ
     GgNormalTexture(void) {}
     GgNormalTexture(
-      const char *name,                   // 画像ファイル名（1 チャネルの RAW 画像）
-      int width, int height,              // 画像の幅と高さ（2^n 画素）
+      const char *name,                   // 画像ファイル名（1 チャネルの TGA 画像）
       float nz = 1.0f                     // 法線マップの z 成分の値
       )
       : GgTexture()
     {
-      load(name, width, height, nz);
+      load(name, nz);
     }
     GgNormalTexture(const GgNormalTexture &o)
       : GgTexture(o) {}
@@ -1504,10 +1514,10 @@ namespace gg
     }
 
     // 高さマップを読み込んで法線マップを作成する
-    //    name: ファイル名, width, height: 幅と高さ (2^n), nz: 法線マップの z 成分の値
-    void load(const char *name, int width, int height, float nz = 1.0f) const
+    //    name: ファイル名, nz: 法線マップの z 成分の値
+    void load(const char *name, float nz = 1.0f) const
     {
-      loadHeight(name, width, height, nz);
+      loadHeight(name, nz);
     }
   };
 
@@ -1543,7 +1553,7 @@ namespace gg
       : program(loadShader(vert, frag, geom, nvarying, varyings)) {}
     GgShader(const GgShader &o)
       : GgAttribute(o), program(o.program) {}
-    
+
     // 代入
     GgShader &operator=(const GgShader &o)
     {
@@ -1669,7 +1679,7 @@ namespace gg
       glBindBuffer(GL_COPY_READ_BUFFER, 0);
 #endif
     }
-    
+
     // バッファオブジェクト名を取り出す
     GLuint buf(void) const
     {
@@ -1799,13 +1809,13 @@ namespace gg
     {
       return position.buf();
     }
-    
+
     // データの数を取り出す
     GLuint pnum(void) const
     {
       return position.num();
     }
-    
+
     // ポイントの描画
     virtual void draw(void) const;
   };
@@ -1859,13 +1869,13 @@ namespace gg
     {
       return normal.buf();
     }
-    
+
     // データの数を取り出す
     GLuint nnum(void) const
     {
       return normal.num();
     }
-    
+
     // 三角形群を描画する手続き
     virtual void draw(void) const;
   };
@@ -1894,7 +1904,7 @@ namespace gg
     }
     GgObject(const GgObject &o)
       : GgTriangles(o), index(o.index) {}
-    
+
     // 代入
     GgObject &operator=(const GgObject &o)
     {
@@ -1921,13 +1931,13 @@ namespace gg
     {
       return index.buf();
     }
-    
+
     // データの数を取り出す
     GLuint fnum(void) const
     {
       return index.num();
     }
-    
+
     // 三角形ポリゴンを描画する手続き
     virtual void draw(void) const;
   };
