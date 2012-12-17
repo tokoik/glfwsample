@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cstdlib>
 #include <cfloat>
 #include <cmath>
 #include <vector>
