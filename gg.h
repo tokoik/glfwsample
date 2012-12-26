@@ -31,6 +31,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define GLFW_NO_GLU
 #if defined(WIN32)
 #  pragma warning(disable:4996)
+#  pragma comment(lib, "OpenGL32.lib")
+#  pragma comment(lib, "GLFW.lib")
 #  include <GL/glfw.h>
 #  include "glext.h"
 
@@ -692,6 +694,16 @@ namespace gg
     );
 
   /*
+  ** カラーバッファの内容を TGA ファイルに保存
+  */
+  extern bool saveColor(const char *name);
+
+  /*
+  ** デプスバッファの内容を TGA ファイルに保存
+  */
+  extern bool saveDepth(const char *name);
+
+  /*
   ** TGA ファイル (8/16/24/32bit) の読み込み
   */
   extern GLubyte *loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &format);
@@ -715,7 +727,6 @@ namespace gg
   ** 三角形分割された OBJ ファイルと MTL ファイルを読み込む
   */
   extern bool loadObj(const char *name, GLuint &ng, GLuint (*&group)[2], GLfloat (*&ka)[4], GLfloat (*&kd)[4], GLfloat (*&ks)[4], GLfloat *&kshi, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&norm)[3], bool normalize);
-
 
   /*
   ** 基底クラス
