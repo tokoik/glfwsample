@@ -1,5 +1,5 @@
 /*
-** ゲームグラフィックス特論用補助プログラム for GLFW
+** ゲームグラフィックス特論用補助プログラム GLFW 版
 **
 
 Copyright (c) 2011, 2012 Kohe Tokoi. All Rights Reserved.
@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define GLFW_NO_GLU
 #if defined(WIN32)
+//#  pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 #  pragma warning(disable:4996)
 #  pragma comment(lib, "OpenGL32.lib")
 #  pragma comment(lib, "GLFW.lib")
@@ -1601,10 +1602,6 @@ namespace gg
       glBindBuffer(GL_ARRAY_BUFFER, 0);
       glUseProgram(0);
     }
-
-    // 変換行列を設定する
-    virtual void loadMatrix(const GgMatrix &mp, const GgMatrix &mw) = 0;
-    virtual void loadMatrix(const GLfloat *mp, const GLfloat *mw) = 0;
 
     // シェーダプログラム名を取り出す
     GLuint get(void) const
