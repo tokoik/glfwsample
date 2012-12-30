@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #  pragma warning(disable:4996)
 #  pragma comment(lib, "OpenGL32.lib")
 #  pragma comment(lib, "GLFW.lib")
-#  include "glfw.h"
+#  include <GL/glfw.h>
 #  include "glext.h"
 
 extern PFNGLBLENDCOLORPROC glBlendColor;
