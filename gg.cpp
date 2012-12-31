@@ -1388,12 +1388,14 @@ bool gg::saveColor(const char *name)
     0,      // Number of a color map entry bits per pixel
     0, 0,   // Horizontal image position
     0, 0,   // Vertical image position
-    viewport[2] & 0xff, viewport[2] >> 8,
-    viewport[3] & 0xff, viewport[3] >> 8,
+    static_cast<unsigned char>(viewport[2] & 0xff),
+    static_cast<unsigned char>(viewport[2] >> 8),
+    static_cast<unsigned char>(viewport[3] & 0xff),
+    static_cast<unsigned char>(viewport[3] >> 8),
     24,     // Pixel depth (bits per pixel)
     0       // Image descriptor
   };
-  file.write((char *)header, sizeof header);
+  file.write(reinterpret_cast<char *>(header), sizeof header);
   if (file.bad())
   {
     // ヘッダの書き込みに失敗した
@@ -1403,17 +1405,20 @@ bool gg::saveColor(const char *name)
   }
 
   // データの書き込み
-  file.write((char *)buffer, size);
+  file.write(reinterpret_cast<char *>(buffer), size);
   std::streamoff pos = file.tellp();
 
   // フッタの書き込み
   unsigned char footer[26] =
   {
-    (pos >> 24) & 0xff, (pos >> 16) & 0xff, (pos >> 8) & 0xff, pos & 0xff,
+    static_cast<unsigned char>((pos >> 24) & 0xff),
+    static_cast<unsigned char>((pos >> 16) & 0xff),
+    static_cast<unsigned char>((pos >> 8) & 0xff),
+    static_cast<unsigned char>(pos & 0xff),
     0, 0, 0, 0,
     'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', '\0'
   };
-  file.write((char *)footer, sizeof footer);
+  file.write(reinterpret_cast<char *>(footer), sizeof footer);
 
   // 書き込みチェック
   if (file.bad())
@@ -1479,12 +1484,14 @@ bool gg::saveDepth(const char *name)
     0,      // Number of a color map entry bits per pixel
     0, 0,   // Horizontal image position
     0, 0,   // Vertical image position
-    viewport[2] & 0xff, viewport[2] >> 8,
-    viewport[3] & 0xff, viewport[3] >> 8,
+    static_cast<unsigned char>(viewport[2] & 0xff),
+    static_cast<unsigned char>(viewport[2] >> 8),
+    static_cast<unsigned char>(viewport[3] & 0xff),
+    static_cast<unsigned char>(viewport[3] >> 8),
     8,      // Pixel depth (bits per pixel)
     0       // Image descriptor
   };
-  file.write((char *)header, sizeof header);
+  file.write(reinterpret_cast<char *>(header), sizeof header);
   if (file.bad())
   {
     // ヘッダの書き込みに失敗した
@@ -1494,17 +1501,20 @@ bool gg::saveDepth(const char *name)
   }
 
   // データの書き込み
-  file.write((char *)buffer, size);
+  file.write(reinterpret_cast<char *>(buffer), size);
   std::streamoff pos = file.tellp();
 
   // フッタの書き込み
   unsigned char footer[26] =
   {
-    (pos >> 24) & 0xff, (pos >> 16) & 0xff, (pos >> 8) & 0xff, pos & 0xff,
+    static_cast<unsigned char>((pos >> 24) & 0xff),
+    static_cast<unsigned char>((pos >> 16) & 0xff),
+    static_cast<unsigned char>((pos >> 8) & 0xff),
+    static_cast<unsigned char>(pos & 0xff),
     0, 0, 0, 0,
     'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', '\0'
   };
-  file.write((char *)footer, sizeof footer);
+  file.write(reinterpret_cast<char *>(footer), sizeof footer);
 
   // 書き込みチェック
   if (file.bad())
@@ -1538,7 +1548,7 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
 
   // ヘッダの読み込み
   unsigned char header[18];
-  file.read((char *)header, sizeof header);
+  file.read(reinterpret_cast<char *>(header), sizeof header);
   if (file.bad())
   {
     // ヘッダの読み込みに失敗した
@@ -1607,7 +1617,7 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
         file.read(tmp, depth);
         for (size_t i = 0; i < count; ++i)
         {
-          memcpy((char *)(buffer + p), tmp, depth);
+          memcpy(reinterpret_cast<char *>(buffer + p), tmp, depth);
           p += depth;
         }
       }
@@ -1616,7 +1626,7 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
         // raw packet
         size_t count = (c + 1) * depth;
         if (p + count > size) break;
-        file.read((char *)(buffer + p), count);
+        file.read(reinterpret_cast<char *>(buffer + p), count);
         p += count;
       }
     }
@@ -1624,7 +1634,7 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
   else
   {
     // 非圧縮
-    file.read((char *)buffer, size);
+    file.read(reinterpret_cast<char *>(buffer), size);
   }
 
   // 読み込みチェック
@@ -3352,8 +3362,8 @@ gg::GgTrackball::GgTrackball(void)
 void gg::GgTrackball::region(int w, int h)
 {
   // マウスポインタ位置のウィンドウ内の相対的位置への換算用
-  sx = 1.0f / (float)w;
-  sy = 1.0f / (float)h;
+  sx = 1.0f / static_cast<float>(w);
+  sy = 1.0f / static_cast<float>(h);
 }
 
 /*
@@ -3486,9 +3496,9 @@ gg::GgPoints *gg::ggPointSphere(GLuint nv, GLfloat cx, GLfloat cy, GLfloat cz, G
   // 点の生成
   for (GLuint v = 0; v < nv; ++v)
   {
-    float r = radius * (float)rand() / (float)RAND_MAX;
-    float t = 6.2831853f * (float)rand() / ((float)RAND_MAX + 1.0f);
-    float cp = 2.0f * (float)rand() / (float)RAND_MAX - 1.0f;
+    float r = radius * static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    float t = 6.2831853f * static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
+    float cp = 2.0f * static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 1.0f;
     float sp = sqrt(1.0f - cp * cp);
     float ct = cos(t), st = sin(t);
 
@@ -3566,7 +3576,7 @@ gg::GgTriangles *gg::ggEllipse(GLfloat width, GLfloat height, GLuint slices)
   // 頂点位置の計算
   for (GLuint v = 0; v < slices; ++v)
   {
-    float t = 6.2831853f * (float)v / (float)slices;
+    float t = 6.2831853f * static_cast<float>(v) / static_cast<float>(slices);
 
     vert[v][0] = cos(t) * width * 0.5f;
     vert[v][1] = sin(t) * height * 0.5f;
