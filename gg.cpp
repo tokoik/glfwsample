@@ -23,12 +23,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **
 */
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <cstdlib>
 #include <cfloat>
 #include <cmath>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include <vector>
 #include <map>
 
@@ -1341,6 +1341,198 @@ void gg::ggFBOError(const char *msg)
 }
 
 /*
+** カラーバッファの内容を TGA ファイルに保存
+*/
+bool gg::saveColor(const char *name)
+{
+  // 現在のビューポートのサイズを得る
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  
+  // ビューポートのサイズ分のメモリを確保する
+  size_t size = viewport[2] * viewport[3] * 3;
+  GLubyte *buffer = 0;
+  try
+  {
+    buffer = new GLubyte[size];
+  }
+  catch (std::bad_alloc e)
+  {
+    return false;
+  }
+
+  // 画面表示の完了を待つ
+  glFinish();
+
+  // デプスバッファの読み込み
+  glReadPixels(viewport[0], viewport[1], viewport[2], viewport[3],
+    GL_BGR, GL_UNSIGNED_BYTE, buffer);
+    
+  // ファイルを開く
+  std::ofstream file(name, std::ios::binary);
+  if (file.fail())
+  {
+    // 開けなかった
+    std::cerr << "Waring: Can't open file: " << name << std::endl;
+    return false;
+  }
+
+  // ヘッダの書き込み
+  unsigned char header[18] =
+  {
+    0,      // ID length
+    0,      // Color map type (none)
+    2,      // Image Type (uncompressed true color)
+    0, 0,   // Offset into the color map table
+    0, 0,   // Number of color map entries
+    0,      // Number of a color map entry bits per pixel
+    0, 0,   // Horizontal image position
+    0, 0,   // Vertical image position
+    static_cast<unsigned char>(viewport[2] & 0xff),
+    static_cast<unsigned char>(viewport[2] >> 8),
+    static_cast<unsigned char>(viewport[3] & 0xff),
+    static_cast<unsigned char>(viewport[3] >> 8),
+    24,     // Pixel depth (bits per pixel)
+    0       // Image descriptor
+  };
+  file.write(reinterpret_cast<char *>(header), sizeof header);
+  if (file.bad())
+  {
+    // ヘッダの書き込みに失敗した
+    std::cerr << "Waring: Can't write file header: " << name << std::endl;
+    file.close();
+    return 0;
+  }
+
+  // データの書き込み
+  file.write(reinterpret_cast<char *>(buffer), size);
+  std::streamoff pos = file.tellp();
+
+  // フッタの書き込み
+  unsigned char footer[26] =
+  {
+    static_cast<unsigned char>((pos >> 24) & 0xff),
+    static_cast<unsigned char>((pos >> 16) & 0xff),
+    static_cast<unsigned char>((pos >> 8) & 0xff),
+    static_cast<unsigned char>(pos & 0xff),
+    0, 0, 0, 0,
+    'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', '\0'
+  };
+  file.write(reinterpret_cast<char *>(footer), sizeof footer);
+
+  // 書き込みチェック
+  if (file.bad())
+  {
+    // 書き込みに失敗した
+    std::cerr << "Waring: Can't write image data: " << name << std::endl;
+  }
+
+  // ファイルを閉じる
+  file.close();
+
+  // メモリの解放
+  delete[] buffer;
+  
+  return true;
+}
+
+/*
+** デプスバッファの内容を TGA ファイルに保存
+*/
+bool gg::saveDepth(const char *name)
+{
+  // 現在のビューポートのサイズを得る
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  
+  // ビューポートのサイズ分のメモリを確保する
+  size_t size = viewport[2] * viewport[3];
+  GLubyte *buffer = 0;
+  try
+  {
+    buffer = new GLubyte[size];
+  }
+  catch (std::bad_alloc e)
+  {
+    return false;
+  }
+
+  // 画面表示の完了を待つ
+  glFinish();
+
+  // デプスバッファの読み込み
+  glReadPixels(viewport[0], viewport[1], viewport[2], viewport[3],
+    GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, buffer);
+    
+  // ファイルを開く
+  std::ofstream file(name, std::ios::binary);
+  if (file.fail())
+  {
+    // 開けなかった
+    std::cerr << "Waring: Can't open file: " << name << std::endl;
+    return false;
+  }
+
+  // ヘッダの書き込み
+  unsigned char header[18] =
+  {
+    0,      // ID length
+    0,      // Color map type (none)
+    3,      // Image Type (uncompressed rayscale)
+    0, 0,   // Offset into the color map table
+    0, 0,   // Number of color map entries
+    0,      // Number of a color map entry bits per pixel
+    0, 0,   // Horizontal image position
+    0, 0,   // Vertical image position
+    static_cast<unsigned char>(viewport[2] & 0xff),
+    static_cast<unsigned char>(viewport[2] >> 8),
+    static_cast<unsigned char>(viewport[3] & 0xff),
+    static_cast<unsigned char>(viewport[3] >> 8),
+    8,      // Pixel depth (bits per pixel)
+    0       // Image descriptor
+  };
+  file.write(reinterpret_cast<char *>(header), sizeof header);
+  if (file.bad())
+  {
+    // ヘッダの書き込みに失敗した
+    std::cerr << "Waring: Can't write file header: " << name << std::endl;
+    file.close();
+    return 0;
+  }
+
+  // データの書き込み
+  file.write(reinterpret_cast<char *>(buffer), size);
+  std::streamoff pos = file.tellp();
+
+  // フッタの書き込み
+  unsigned char footer[26] =
+  {
+    static_cast<unsigned char>((pos >> 24) & 0xff),
+    static_cast<unsigned char>((pos >> 16) & 0xff),
+    static_cast<unsigned char>((pos >> 8) & 0xff),
+    static_cast<unsigned char>(pos & 0xff),
+    0, 0, 0, 0,
+    'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', '\0'
+  };
+  file.write(reinterpret_cast<char *>(footer), sizeof footer);
+
+  // 書き込みチェック
+  if (file.bad())
+  {
+    // 書き込みに失敗した
+    std::cerr << "Waring: Can't write image data: " << name << std::endl;
+  }
+
+  // ファイルを閉じる
+  file.close();
+
+  // メモリの解放
+  delete[] buffer;
+  
+  return true;
+}
+
+/*
 ** TGA ファイル (8/16/24/32bit) の読み込み
 */
 GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &format)
@@ -1356,7 +1548,7 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
 
   // ヘッダの読み込み
   unsigned char header[18];
-  file.read((char *)header, sizeof header);
+  file.read(reinterpret_cast<char *>(header), sizeof header);
   if (file.bad())
   {
     // ヘッダの読み込みに失敗した
@@ -1425,7 +1617,7 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
         file.read(tmp, depth);
         for (size_t i = 0; i < count; ++i)
         {
-          memcpy((char *)(buffer + p), tmp, depth);
+          memcpy(reinterpret_cast<char *>(buffer + p), tmp, depth);
           p += depth;
         }
       }
@@ -1434,7 +1626,7 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
         // raw packet
         size_t count = (c + 1) * depth;
         if (p + count > size) break;
-        file.read((char *)(buffer + p), count);
+        file.read(reinterpret_cast<char *>(buffer + p), count);
         p += count;
       }
     }
@@ -1442,7 +1634,7 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
   else
   {
     // 非圧縮
-    file.read((char *)buffer, size);
+    file.read(reinterpret_cast<char *>(buffer), size);
   }
 
   // 読み込みチェック
@@ -1459,6 +1651,24 @@ GLubyte *gg::loadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &
 }
 
 /*
+** テクスチャマッピング用のデータの読み込み
+*/
+void gg::loadTexture(GLsizei width, GLsizei height, GLenum internal, GLenum format, const GLvoid *image)
+{
+  // アルファチャンネルがついていれば 4 バイト境界に設定
+  glPixelStorei(GL_UNPACK_ALIGNMENT, (format == GL_BGRA || format == GL_RGBA) ? 4 : 1);
+
+  // テクスチャを割り当てる
+  glTexImage2D(GL_TEXTURE_2D, 0, internal, width, height, 0, format, GL_UNSIGNED_BYTE, image);
+
+  // バイリニア（ミップマップなし），エッジでクランプ
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
+/*
 ** テクスチャマッピング用の TGA 画像ファイルの読み込み
 */
 bool gg::loadImage(const char *name, GLenum internal)
@@ -1472,20 +1682,8 @@ bool gg::loadImage(const char *name, GLenum internal)
   // 画像の読み込み先
   GLubyte *image = loadTga(name, width, height, format);
 
-  // 画像が読み込めなかったら戻る
-  if (image == 0) return false;
-
-  // アルファチャンネルがついていれば 4 バイト境界に設定
-  glPixelStorei(GL_UNPACK_ALIGNMENT, (format == GL_BGRA) ? 4 : 1);
-
-  // テクスチャを割り当てる
-  glTexImage2D(GL_TEXTURE_2D, 0, internal, width, height, 0, format, GL_UNSIGNED_BYTE, image);
-
-  // バイリニア（ミップマップなし），エッジでクランプ
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  // テクスチャメモリへの読み込み
+  loadTexture(width, height, internal, format, image);
 
   // 読み込みに使ったメモリを開放する
   delete[] image;
@@ -1543,7 +1741,7 @@ bool gg::loadHeight(const char *name, float nz)
     nmap[i][0] = nx * 0.5f / nl + 0.5f;
     nmap[i][1] = ny * 0.5f / nl + 0.5f;
     nmap[i][2] = nz * 0.5f / nl + 0.5f;
-    nmap[i][3] = hmap[i] * 0.0039215686f; // = 1/255
+    nmap[i][3] = hmap[i] * 0.0039215686f; // == 1/255
   }
 
   // 高さマップの読み込みに使ったメモリを開放する
@@ -1830,7 +2028,9 @@ struct grp      // 面グループ
 /*
 ** 三角形分割された OBJ ファイルと MTL ファイルを読み込む
 */
-bool gg::loadObj(const char *name, GLuint &ng, GLuint (*&group)[2], GLfloat (*&ka)[4], GLfloat (*&kd)[4], GLfloat (*&ks)[4], GLfloat *&kshi, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&norm)[3], bool normalize)
+bool gg::loadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
+  GLfloat (*&ka)[4], GLfloat (*&kd)[4], GLfloat (*&ks)[4], GLfloat *&kshi,
+  GLuint &nv, GLfloat (*&vert)[3], GLfloat (*&norm)[3], bool normalize)
 {
   // ファイルパスからディレクトリ名を取り出す
   std::string path(name);
@@ -2218,10 +2418,10 @@ bool gg::loadObj(const char *name, GLuint &ng, GLuint (*&group)[2], GLfloat (*&k
       // 法線番号が 0 なら
       if (fn == 0)
       {
-        // 面法線を頂点法線とする
-        norm[nv][0] = x;
-        norm[nv][1] = y;
-        norm[nv][2] = z;
+        // 頂点法線を保存する
+        norm[nv][0] = _vert[fv].norm.x;
+        norm[nv][1] = _vert[fv].norm.y;
+        norm[nv][2] = _vert[fv].norm.z;
       }
       else
       {
@@ -3162,8 +3362,8 @@ gg::GgTrackball::GgTrackball(void)
 void gg::GgTrackball::region(int w, int h)
 {
   // マウスポインタ位置のウィンドウ内の相対的位置への換算用
-  sx = 1.0f / (float)w;
-  sy = 1.0f / (float)h;
+  sx = 1.0f / static_cast<float>(w);
+  sy = 1.0f / static_cast<float>(h);
 }
 
 /*
@@ -3267,7 +3467,7 @@ void gg::GgTriangles::draw(void) const
 /*
 ** オブジェクト：描画
 */
-void gg::GgObject::draw(void) const
+void gg::GgElements::draw(void) const
 {
   // シェーダプログラムの使用を開始する
   getShader()->use(pbuf(), nbuf());
@@ -3296,9 +3496,9 @@ gg::GgPoints *gg::ggPointSphere(GLuint nv, GLfloat cx, GLfloat cy, GLfloat cz, G
   // 点の生成
   for (GLuint v = 0; v < nv; ++v)
   {
-    float r = radius * (float)rand() / (float)RAND_MAX;
-    float t = 6.2831853f * (float)rand() / ((float)RAND_MAX + 1.0f);
-    float cp = 2.0f * (float)rand() / (float)RAND_MAX - 1.0f;
+    float r = radius * static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    float t = 6.2831853f * static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
+    float cp = 2.0f * static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 1.0f;
     float sp = sqrt(1.0f - cp * cp);
     float ct = cos(t), st = sin(t);
 
@@ -3376,7 +3576,7 @@ gg::GgTriangles *gg::ggEllipse(GLfloat width, GLfloat height, GLuint slices)
   // 頂点位置の計算
   for (GLuint v = 0; v < slices; ++v)
   {
-    float t = 6.2831853f * (float)v / (float)slices;
+    float t = 6.2831853f * static_cast<float>(v) / static_cast<float>(slices);
 
     vert[v][0] = cos(t) * width * 0.5f;
     vert[v][1] = sin(t) * height * 0.5f;
@@ -3401,69 +3601,26 @@ gg::GgTriangles *gg::ggEllipse(GLfloat width, GLfloat height, GLuint slices)
 /*
 ** 三角形分割された Alias OBJ ファイル (Arrays 形式)
 */
-gg::GgTriangles *gg::ggObjArray(const char *name, bool normalize)
+gg::GgTriangles *gg::ggArraysObj(const char *name, bool normalize)
 {
-  GLuint nv, nf;
+  GLuint ng, nv;
+  GLuint (*group)[2];
+  GLfloat (*ka)[4], (*kd)[4], (*ks)[4], *kshi;
   GLfloat (*vert)[3], (*norm)[3];
-  GLuint (*face)[3];
 
-  if (!loadObj(name, nv, vert, norm, nf, face, normalize)) return 0;
-
-  GLfloat (*fnorm)[3] = 0;
-  GLfloat (*fvert)[3] = 0;
-  try
-  {
-    fvert = new GLfloat[nf * 3][3];
-    fnorm = new GLfloat[nf * 3][3];
-  }
-  catch (std::bad_alloc e)
-  {
-    delete[] fvert;
-    return 0;
-  }
-
-  // 頂点データを各三角形の頂点に分配する
-  for (GLuint f = 0; f < nf; ++f)
-  {
-    GLuint f0 = f * 3, f1 = f0 + 1, f2 = f1 + 1;
-    GLuint v0 = face[f][0], v1 = face[f][1], v2 = face[f][2];
-
-    // 位置
-    fvert[f0][0] = vert[v0][0];
-    fvert[f0][1] = vert[v0][1];
-    fvert[f0][2] = vert[v0][2];
-
-    fvert[f1][0] = vert[v1][0];
-    fvert[f1][1] = vert[v1][1];
-    fvert[f1][2] = vert[v1][2];
-
-    fvert[f2][0] = vert[v2][0];
-    fvert[f2][1] = vert[v2][1];
-    fvert[f2][2] = vert[v2][2];
-
-    // 法線
-    fnorm[f0][0] = norm[v0][0];
-    fnorm[f0][1] = norm[v0][1];
-    fnorm[f0][2] = norm[v0][2];
-
-    fnorm[f1][0] = norm[v1][0];
-    fnorm[f1][1] = norm[v1][1];
-    fnorm[f1][2] = norm[v1][2];
-
-    fnorm[f2][0] = norm[v2][0];
-    fnorm[f2][1] = norm[v2][1];
-    fnorm[f2][2] = norm[v2][2];
-  }
+  if (!loadObj(name, ng, group, ka, kd, ks, kshi, nv, vert, norm, normalize)) return 0;
 
   // オブジェクトの作成
-  GgTriangles *obj = new gg::GgTriangles(nf * 3, fvert, fnorm);
+  GgTriangles *obj = new gg::GgTriangles(nv, vert, norm);
 
   // 作業用のメモリの解放
+  delete[] group;
+  delete[] ka;
+  delete[] kd;
+  delete[] ks;
+  delete[] kshi;
   delete[] vert;
   delete[] norm;
-  delete[] face;
-  delete[] fnorm;
-  delete[] fvert;
 
   return obj;
 }
@@ -3471,7 +3628,7 @@ gg::GgTriangles *gg::ggObjArray(const char *name, bool normalize)
 /*
 ** 三角形分割された Alias OBJ ファイル (Elements 形式)
 */
-gg::GgObject *gg::ggObj(const char *name, bool normalize)
+gg::GgElements *gg::ggElementsObj(const char *name, bool normalize)
 {
   GLuint nv, nf;
   GLfloat (*vert)[3], (*norm)[3];
@@ -3480,7 +3637,7 @@ gg::GgObject *gg::ggObj(const char *name, bool normalize)
   if (!loadObj(name, nv, vert, norm, nf, face, normalize)) return 0;
 
   // オブジェクトの作成
-  GgObject *obj = new gg::GgObject(nv, vert, norm, nf, face);
+  GgElements *obj = new gg::GgElements(nv, vert, norm, nf, face);
 
   // 作業用のメモリの解放
   delete[] vert;
