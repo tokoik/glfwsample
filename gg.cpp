@@ -725,44 +725,47 @@ bool gg::ggLoadObj(const char *name, GLuint &nv, GLfloat (*&vert)[3], GLfloat (*
   return true;
 }
 
-// マテリアル
-struct rgb { float r, g, b; };
-struct mat
+namespace gg
 {
-  rgb ka;       // ambient
-  rgb kd;       // diffuse
-  rgb ks;       // specular
-  float kshi;   // shininess
-};
-
-// 読み込み用のテンポラリデータの形式
-struct vec      // ベクトル
-{
-  float x, y, z;
-};
-struct vtx      // 頂点属性
-{
-  vec pos;      // 頂点位置
-  vec norm;     // 頂点法線
-};
-struct fac      // 面データ
-{
-  GLuint v[3];  // 頂点番号
-  GLuint n[3];  // 法線番号
-  vec norm;     // 面法線
-};
-struct grp      // 面グループ
-{
-  GLuint b;     // 面グループの開始番号
-  GLuint c;     // 面グループの頂点数
-  const mat *m; // 面グループのマテリアル
-  grp(GLuint begin, GLuint count, const mat &material)
+  // マテリアル
+  struct rgb { float r, g, b; };
+  struct mat
   {
-    b = begin;
-    c = count;
-    m = &material;
-  }
-};
+    rgb ka;       // ambient
+    rgb kd;       // diffuse
+    rgb ks;       // specular
+    float kshi;   // shininess
+  };
+
+  // 読み込み用のテンポラリデータの形式
+  struct vec      // ベクトル
+  {
+    float x, y, z;
+  };
+  struct vtx      // 頂点属性
+  {
+    vec pos;      // 頂点位置
+    vec norm;     // 頂点法線
+  };
+  struct fac      // 面データ
+  {
+    GLuint v[3];  // 頂点番号
+    GLuint n[3];  // 法線番号
+    vec norm;     // 面法線
+  };
+  struct grp      // 面グループ
+  {
+    GLuint b;     // 面グループの開始番号
+    GLuint c;     // 面グループの頂点数
+    const mat *m; // 面グループのマテリアル
+    grp(GLuint begin, GLuint count, const mat &material)
+    {
+      b = begin;
+      c = count;
+      m = &material;
+    }
+  };
+}
 
 /*
 ** 三角形分割された OBJ ファイルと MTL ファイルを読み込む
