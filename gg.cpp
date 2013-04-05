@@ -1285,7 +1285,7 @@ bool gg::ggInit(int width, int height, int redbits, int greenbits, int bluebits,
   glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   // GLFW のウィンドウを開く
-  if (glfwOpenWindow(width, height, redbits, greenbits, bluebits, alphabits, depthbits, stencilbits, GLFW_WINDOW) == GL_FALSE)
+  if (glfwOpenWindow(width, height, redbits, greenbits, bluebits, alphabits, depthbits, stencilbits, mode) == GL_FALSE)
   {
     // ウィンドウが開けない
 #if defined(_WIN32)
@@ -1297,11 +1297,11 @@ bool gg::ggInit(int width, int height, int redbits, int greenbits, int bluebits,
   }
 
 #if defined(_WIN32)
-  // OpenGL 拡張機能の有効化
+  // VisualStudio に用意されていない OpenGL のライブラリ関数を有効にする
   initGLExtFunc();
 #endif
 
-  // Swap Interval の設定
+  // 垂直同期を待つ
   glfwSwapInterval(1);
 
   return true;
