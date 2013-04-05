@@ -647,7 +647,7 @@ extern PFNGLTEXSTORAGE2DMULTISAMPLEPROC glTexStorage2DMultisample;
 extern PFNGLTEXSTORAGE3DMULTISAMPLEPROC glTexStorage3DMultisample;
 #elif defined(__APPLE__)
 #  define GLFW_INCLUDE_GL3
-#  include <GL/glfw.h>
+#  include "glfw.h"
 #  include <OpenGL/glext.h>
 #  include <OpenGL/gl3ext.h>
 #else

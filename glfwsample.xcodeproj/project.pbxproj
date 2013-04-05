@@ -173,7 +173,7 @@
 				HEADER_SEARCH_PATHS = /usr/local/include;
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_LDFLAGS = (
-					"-lglfw",
+					libglfw.a,
 					"-framework",
 					Cocoa,
 					"-framework",
@@ -191,7 +191,7 @@
 				HEADER_SEARCH_PATHS = /usr/local/include;
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_LDFLAGS = (
-					"-lglfw",
+					libglfw.a,
 					"-framework",
 					Cocoa,
 					"-framework",
