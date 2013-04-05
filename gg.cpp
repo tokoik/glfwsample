@@ -34,7 +34,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(_WIN32)
 #  include <windows.h>
-#endif defined(_WIN32)
+#endif
 
 #include "gg.h"
 
