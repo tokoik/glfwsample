@@ -1,3 +1,4 @@
+#include <windows.h>
 #include <iostream>
 #include <cstdlib>
 
@@ -120,33 +121,11 @@ static GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
 
 int main(int argc, const char * argv[])
 {
-  // GLFW を初期化する
-  if (!glfwInit())
-  {
-    // 初期化に失敗した
-    std::cerr << "Can't initialize GLFW." << std::endl;
-    exit(EXIT_FAILURE);
-  }
-
-  // OpenGL Version 3.2 Core Profile を選択する
-  glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
-  glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
-  glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-  // GLFW のウィンドウを開く
-  if (!glfwOpenWindow(0, 0, 0, 0, 0, 0, 0, 0, GLFW_WINDOW))
-  {
-    // ウィンドウが開けなかった
-    std::cerr << "Can't open GLFW window." << std::endl;
-    exit(EXIT_FAILURE);
-  }
-
-  // 補助プログラムの初期化
-  ggInit();
+  // ゲームグラフィックス特論の都合にもとづく初期化
+  if (!ggInit()) exit(EXIT_FAILURE);
 
   // 開いたウィンドウに対する設定
   glfwSwapInterval(1);
-  glfwSetWindowTitle("sample");
 
   // OpenGL の初期設定
   init();
