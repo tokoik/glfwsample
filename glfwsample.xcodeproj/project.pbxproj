@@ -173,9 +173,13 @@
 				HEADER_SEARCH_PATHS = /usr/local/include;
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_LDFLAGS = (
+					"-lglfw",
+					"-framework",
+					Cocoa,
 					"-framework",
 					OpenGL,
-					"-lglfw",
+					"-framework",
+					IOKit,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -187,9 +191,13 @@
 				HEADER_SEARCH_PATHS = /usr/local/include;
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_LDFLAGS = (
+					"-lglfw",
+					"-framework",
+					Cocoa,
 					"-framework",
 					OpenGL,
-					"-lglfw",
+					"-framework",
+					IOKit,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

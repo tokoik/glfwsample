@@ -1,41 +1,37 @@
 #
 # for Linux
 #
-core
 *.o
-*~
+core
 a.out
 glfwsample
 #
 # for Mac
 #
 .DS_Store
-build/
 *.xcodeproj/*
 !project.pbxproj
 *.xcuserdatad/
+build/
 DerivedData/
 #
 # for Windows
 #
-Debug/
-Release/
-ipch/
 Thumbs.db
-*.obj
 *.dll
-!freeglut.dll
-!glew32.dll
 *.ncb
 *.lib
-!freeglut.lib
-!glew32.lib
+!GLFW.lib
 *.ncb
 *.suo
 *.vcproj.*.*.user
 *.sdf
 *.opensdf
+Debug/
+Release/
+ipch/
 #
 # anothre stuff
 #
+*~
 *.bak
