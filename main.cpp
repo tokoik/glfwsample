@@ -1,17 +1,20 @@
 #include <iostream>
 
-// 補助プログラム
 #include "gg.h"
 using namespace gg;
 
+//
 // 初期設定
+//
 static void init(void)
 {
   // 背景色
   glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 }
 
-// シェーダオブジェクトのコンパイル結果を表示する
+//
+// シェーダのコンパイル結果の表示
+//
 static GLboolean printShaderInfoLog(GLuint shader, const char *str)
 {
   // コンパイル結果を取得する
@@ -33,10 +36,12 @@ static GLboolean printShaderInfoLog(GLuint shader, const char *str)
     delete[] infoLog;
   }
   
-  return (GLboolean)status;
+  return static_cast<GLboolean>(status);
 }
- 
-// プログラムオブジェクトのリンク結果を表示する
+
+//
+// シェーダのリンク結果の表示
+//
 static GLboolean printProgramInfoLog(GLuint program)
 {
   // リンク結果を取得する
@@ -58,10 +63,12 @@ static GLboolean printProgramInfoLog(GLuint program)
     delete[] infoLog;
   }
   
-  return (GLboolean)status;
+  return static_cast<GLboolean>(status);
 }
 
+//
 // プログラムオブジェクトの作成
+//
 static GLuint createProgram(const char *vsrc, const char *pv, const char *fsrc, const char *fc)
 {
   // バーテックスシェーダのシェーダオブジェクト
@@ -92,7 +99,9 @@ static GLuint createProgram(const char *vsrc, const char *pv, const char *fsrc, 
   return program;
 }
 
+//
 // 頂点配列オブジェクトの作成
+//
 static GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
 {
   // 頂点配列オブジェクト
@@ -104,9 +113,9 @@ static GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
   GLuint vbo;
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof (GLfloat) * 2 * vertices, position, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof (GLfloat[2]) * vertices, position, GL_STATIC_DRAW);
 
-  // 結合されている頂点バッファオブジェクトを attribute 変数から参照できるようにする
+  // 結合されている頂点バッファオブジェクトを in 変数から参照できるようにする
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(0);
 
@@ -117,13 +126,13 @@ static GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
   return vao;
 }
 
+//
+// メインプログラム
+//
 int main(int argc, const char * argv[])
 {
   // ゲームグラフィックス特論の都合にもとづく初期化
   if (!ggInit()) return 1;
-
-  // 開いたウィンドウに対する設定
-  glfwSwapInterval(1);
 
   // OpenGL の初期設定
   init();
@@ -162,7 +171,7 @@ int main(int argc, const char * argv[])
   // 頂点配列オブジェクトの作成
   GLuint vao = createObject(vertices, position);
 
-  // 図形を表示する
+  // ウィンドウが開いている間くり返し描画する
   while (glfwGetWindowParam(GLFW_OPENED))
   {
     // 画面消去
