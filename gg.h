@@ -31,7 +31,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define GLFW_NO_GLU
 #if defined(_WIN32)
 //#  pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
-#  pragma warning(disable:4098)
 #  pragma warning(disable:4996)
 #  pragma comment(lib, "OpenGL32.lib")
 #  pragma comment(lib, "GLFW.lib")
