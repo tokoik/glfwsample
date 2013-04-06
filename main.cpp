@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstdlib>
 
 // 補助プログラム
 #include "gg.h"
@@ -121,7 +120,7 @@ static GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
 int main(int argc, const char * argv[])
 {
   // ゲームグラフィックス特論の都合にもとづく初期化
-  if (!ggInit()) exit(EXIT_FAILURE);
+  if (!ggInit()) return 1;
 
   // 開いたウィンドウに対する設定
   glfwSwapInterval(1);
@@ -169,10 +168,10 @@ int main(int argc, const char * argv[])
     // 画面消去
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // シェーダプログラムの使用
+    // シェーダプログラムの使用開始
     glUseProgram(program);
 
-    // 図形の描画
+    // 図形描画
     glBindVertexArray(vao);
     glDrawArrays(GL_LINE_LOOP, 0, vertices);
     glBindVertexArray(0);
@@ -183,5 +182,5 @@ int main(int argc, const char * argv[])
     glfwSwapBuffers();
   }
 
-  return EXIT_SUCCESS;
+  return 0;
 }
