@@ -661,19 +661,9 @@ namespace gg
   /*
   ** ゲームグラフィックス特論の都合にもとづく初期化
   **
-  **     GLFW を使って OpenGL 3.2 Core Profile の運動を開く
+  **     Windows で OpenGL 1.2 以降の API を有効化する
   */
-  extern bool ggInit(                   // 初期化に成功すれば true
-    int width = 0,                      // 開くウィンドウの幅，0 でデフォルトの 640
-    int height = 0,                     // 開くウィンドウの高さ，0 でデフォルトの 480
-    int redbits = 0,                    // カラーバッファの赤のビット数, 0 でデフォルト
-    int greenbits = 0,                  // カラーバッファの緑のビット数, 0 でデフォルト
-    int bluebits = 0,                   // カラーバッファの青のビット数, 0 でデフォルト
-    int alphabits = 0,                  // アルファバッファのビット数, 0 なら無し
-    int depthbits = 0,                  // デプスバッファのビット数, 0 なら無し
-    int stencilbits = 0,                // ステンシルバッファのビット数, 0 なら無し
-    int mode = GLFW_WINDOW              // 開くウィンドウのモード, GLFW_FULLSCREEN
-    );
+  extern void ggInit(void);
 
   /*
   ** OpenGL のエラーチェック

@@ -131,9 +131,34 @@ static GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
 //
 int main(int argc, const char * argv[])
 {
+  // glfw の初期化
+  if (glfwInit() == GL_FALSE)
+  {
+    // 初期化に失敗した
+    std::cerr << "Error: Failed to initialize GLFW." << std::endl;
+    return 1;
+  }
+  
+  // OpenGL Version 3.2 Core Profile を選択する
+  glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
+  glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
+  glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  
+  // GLFW のウィンドウを開く
+  if (glfwOpenWindow(0, 0, 0, 0, 0, 0, 0, 0, GLFW_WINDOW) == GL_FALSE)
+  {
+    // ウィンドウが開けない
+    std::cerr << "Error: Failed to open GLFW window." << std::endl;
+    return 1;
+  }
+  
   // ゲームグラフィックス特論の都合にもとづく初期化
-  if (!ggInit()) return 1;
-
+  ggInit();
+  
+  // 開いたウィンドウに対する設定
+  glfwSetWindowTitle("sample");
+  glfwSwapInterval(1);
+  
   // OpenGL の初期設定
   init();
 
@@ -188,6 +213,7 @@ int main(int argc, const char * argv[])
     // シェーダプログラムの使用終了
     glUseProgram(0);
 
+    // バッファを入れ替える
     glfwSwapBuffers();
   }
 

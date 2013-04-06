@@ -1266,45 +1266,12 @@ static inline void initGLExtFunc(void)
 /*
 ** ゲームグラフィックス特論の都合にもとづく初期化
 */
-bool gg::ggInit(int width, int height, int redbits, int greenbits, int bluebits, int alphabits, int depthbits, int stencilbits, int mode)
+void gg::ggInit(void)
 {
-  // glfw の初期化
-  if (glfwInit() == GL_FALSE)
-  {
 #if defined(_WIN32)
-    MessageBox(NULL, L"エラー: GLFW の初期化に失敗しました", L"GG特論", MB_OK);
-#else
-    std::cerr << "Error: Failed to initialize GLFW." << std::endl;
-#endif
-    return false;
-  }
-
-  // OpenGL Version 3.2 Core Profile を選択する
-  glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
-  glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
-  glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-  // GLFW のウィンドウを開く
-  if (glfwOpenWindow(width, height, redbits, greenbits, bluebits, alphabits, depthbits, stencilbits, mode) == GL_FALSE)
-  {
-    // ウィンドウが開けない
-#if defined(_WIN32)
-    MessageBox(NULL, L"エラー: OpenGL Version 3.2 以降に対応したビデオカードが必要です", L"GG特論", MB_OK);
-#else
-    std::cerr << "Error: This program requires OpenGL 3.2 or lator." << std::endl;
-#endif
-    return false;
-  }
-
-#if defined(_WIN32)
-  // VisualStudio に用意されていない OpenGL のライブラリ関数を有効にする
+  // OpenGL 1.2 以降の API を有効化する
   initGLExtFunc();
 #endif
-
-  // 垂直同期を待つ
-  glfwSwapInterval(1);
-
-  return true;
 }
 
 /*
