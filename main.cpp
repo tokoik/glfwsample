@@ -1,7 +1,17 @@
 #include <iostream>
 
+// 補助プログラム
 #include "gg.h"
 using namespace gg;
+
+//
+// ウィンドウのサイズ変更時の処理
+//
+static void GLFWCALL resize(int w, int h)
+{
+  // ウィンドウ全体をビューポートにする
+  glViewport(0, 0, w, h);
+}
 
 //
 // 初期設定
@@ -21,11 +31,11 @@ static GLboolean printShaderInfoLog(GLuint shader, const char *str)
   GLint status;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
   if (status == GL_FALSE) std::cerr << "Compile Error in " << str << std::endl;
-  
+
   // シェーダのコンパイル時のログの長さを取得する
   GLsizei bufSize;
   glGetShaderiv(shader, GL_INFO_LOG_LENGTH , &bufSize);
-  
+
   if (bufSize > 1)
   {
     // シェーダのコンパイル時のログの内容を取得する
@@ -35,7 +45,7 @@ static GLboolean printShaderInfoLog(GLuint shader, const char *str)
     std::cerr << infoLog << std::endl;
     delete[] infoLog;
   }
-  
+
   return static_cast<GLboolean>(status);
 }
 
@@ -52,7 +62,7 @@ static GLboolean printProgramInfoLog(GLuint program)
   // シェーダのリンク時のログの長さを取得する
   GLsizei bufSize;
   glGetProgramiv(program, GL_INFO_LOG_LENGTH , &bufSize);
-  
+
   if (bufSize > 1)
   {
     // シェーダのリンク時のログの内容を取得する
@@ -62,7 +72,7 @@ static GLboolean printProgramInfoLog(GLuint program)
     std::cerr << infoLog << std::endl;
     delete[] infoLog;
   }
-  
+
   return static_cast<GLboolean>(status);
 }
 
@@ -73,13 +83,13 @@ static GLuint createProgram(const char *vsrc, const char *pv, const char *fsrc, 
 {
   // バーテックスシェーダのシェーダオブジェクト
   GLuint vobj = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vobj, 1, &vsrc, NULL);
+  glShaderSource(vobj, 1, &vsrc, 0);
   glCompileShader(vobj);
   printShaderInfoLog(vobj, "vertex shader");
 
   // フラグメントシェーダのシェーダオブジェクトの作成
   GLuint fobj = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fobj, 1, &fsrc, NULL);
+  glShaderSource(fobj, 1, &fsrc, 0);
   glCompileShader(fobj);
   printShaderInfoLog(fobj, "fragment shader");
 
@@ -131,35 +141,38 @@ static GLuint createObject(GLuint vertices, const GLfloat (*position)[2])
 //
 int main(int argc, const char * argv[])
 {
-  // glfw の初期化
+  // GLFW を初期化する
   if (glfwInit() == GL_FALSE)
   {
     // 初期化に失敗した
     std::cerr << "Error: Failed to initialize GLFW." << std::endl;
     return 1;
   }
-  
+
   // OpenGL Version 3.2 Core Profile を選択する
   glfwOpenWindowHint(GLFW_OPENGL_VERSION_MAJOR, 3);
   glfwOpenWindowHint(GLFW_OPENGL_VERSION_MINOR, 2);
   glfwOpenWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  
-  // GLFW のウィンドウを開く
+
+  // ウィンドウを開く
   if (glfwOpenWindow(0, 0, 0, 0, 0, 0, 0, 0, GLFW_WINDOW) == GL_FALSE)
   {
-    // ウィンドウが開けない
+    // ウィンドウが開けなかった
     std::cerr << "Error: Failed to open GLFW window." << std::endl;
     return 1;
   }
-  
-  // ゲームグラフィックス特論の都合にもとづく初期化
-  ggInit();
-  
+
   // 開いたウィンドウに対する設定
-  glfwSetWindowTitle("sample");
   glfwSwapInterval(1);
-  
-  // OpenGL の初期設定
+  glfwSetWindowTitle("sample");
+
+  // ウィンドウのサイズ変更時に呼び出す処理の設定
+  glfwSetWindowSizeCallback(resize);
+
+  // 補助プログラムによる初期化
+  ggInit();
+
+  // 初期設定
   init();
 
   // バーテックスシェーダのソースプログラム
@@ -170,20 +183,20 @@ int main(int argc, const char * argv[])
     "{\n"
     "  gl_Position = pv;\n"
     "}\n";
-  
+
   // フラグメントシェーダのソースプログラム
   static const GLchar fsrc[] =
     "#version 150 core\n"
     "out vec4 fc;\n"
     "void main(void)\n"
     "{\n"
-    "  fc = vec4(1.0, 0.0, 0.0, 0.0);\n"
+    "  fc = vec4(1.0, 0.0, 0.0, 1.0);\n"
     "}\n";
-  
+
   // プログラムオブジェクトの作成
   GLuint program = createProgram(vsrc, "pv", fsrc, "fc");
 
-  // 図形データ
+  // 頂点属性
   static const GLfloat position[][2] =
   {
     { -0.5f, -0.5f },
