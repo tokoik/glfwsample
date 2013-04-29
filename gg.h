@@ -724,9 +724,9 @@ namespace gg
   */
   extern GLubyte *ggLoadTga(            // 読み込んだ画像データのポインタを返す (使用後 delete する)
     const char *name,                   // 読み込むファイル名
-    GLsizei &width,                     // 読み込んだ TGA ファイルの幅
-    GLsizei &height,                    // 読み込んだ TGA ファイルの高さ
-    GLenum &format                      // 読み込んだ TGA ファイルの書式 (GL_R, GL_RG, GL_BGR, GL_BGRA)
+    GLsizei *width,                     // 読み込んだ TGA ファイルの幅
+    GLsizei *height,                    // 読み込んだ TGA ファイルの高さ
+    GLenum *format                      // 読み込んだ TGA ファイルの書式 (GL_R, GL_RG, GL_BGR, GL_BGRA)
     );
 
   /*

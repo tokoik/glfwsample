@@ -1486,7 +1486,7 @@ bool gg::ggSaveDepth(const char *name)
 /*
 ** TGA ファイル (8/16/24/32bit) の読み込み
 */
-GLubyte *gg::ggLoadTga(const char *name, GLsizei &width, GLsizei &height, GLenum &format)
+GLubyte *gg::ggLoadTga(const char *name, GLsizei *width, GLsizei *height, GLenum *format)
 {
   // ファイルを開く
   std::ifstream file(name, std::ios::binary);
@@ -1509,24 +1509,24 @@ GLubyte *gg::ggLoadTga(const char *name, GLsizei &width, GLsizei &height, GLenum
   }
 
   // 幅と高さ
-  width = header[13] << 8 | header[12];
-  height = header[15] << 8 | header[14];
+  *width = header[13] << 8 | header[12];
+  *height = header[15] << 8 | header[14];
 
   // 深度
   size_t depth = header[16] / 8;
   switch (depth)
   {
     case 1:
-      format = GL_RED;
+      *format = GL_RED;
       break;
     case 2:
-      format = GL_RG;
+      *format = GL_RG;
       break;
     case 3:
-      format = GL_BGR;
+      *format = GL_BGR;
       break;
     case 4:
-      format = GL_BGRA;
+      *format = GL_BGRA;
       break;
     default:
       std::cerr << "Waring: Unusable format: " << depth << std::endl;
@@ -1535,7 +1535,7 @@ GLubyte *gg::ggLoadTga(const char *name, GLsizei &width, GLsizei &height, GLenum
   }
 
   // データサイズ
-  size_t size = width * height * depth;
+  size_t size = *width * *height * depth;
 
   // メモリの確保
   GLubyte *buffer = 0;
@@ -1631,7 +1631,7 @@ bool gg::ggLoadImage(const char *name, GLenum internal)
   GLenum format;
 
   // 画像の読み込み先
-  GLubyte *image = ggLoadTga(name, width, height, format);
+  GLubyte *image = ggLoadTga(name, &width, &height, &format);
 
   // テクスチャメモリへの読み込み
   ggLoadTexture(width, height, internal, format, image);
@@ -1654,7 +1654,7 @@ bool gg::ggLoadHeight(const char *name, float nz)
   GLenum format;
 
   // 画像の読み込み先
-  GLubyte *hmap = ggLoadTga(name, width, height, format);
+  GLubyte *hmap = ggLoadTga(name, &width, &height, &format);
 
   // 画像が読み込めなかったら戻る
   if (hmap == 0) return false;
