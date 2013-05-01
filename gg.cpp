@@ -23,9 +23,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **
 */
 
-#include <cstdlib>
-#include <cfloat>
 #include <cmath>
+#include <cfloat>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -1568,8 +1567,7 @@ GLubyte *gg::ggLoadTga(const char *name, GLsizei *width, GLsizei *height, GLenum
         file.read(tmp, depth);
         for (size_t i = 0; i < count; ++i)
         {
-          memcpy(reinterpret_cast<char *>(buffer + p), tmp, depth);
-          p += depth;
+          for (size_t j = 0; j < depth;) buffer[p++] = tmp[j++];
         }
       }
       else

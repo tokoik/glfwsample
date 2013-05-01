@@ -26,8 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef __GG_H__
 #define __GG_H__
 
-#include <cstring>
-
 #define GLFW_NO_GLU
 #if defined(_WIN32)
 //#  pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
@@ -648,12 +646,13 @@ extern PFNGLTEXSTORAGE3DMULTISAMPLEPROC glTexStorage3DMultisample;
 #elif defined(__APPLE__)
 #  define GLFW_INCLUDE_GL3
 #  include "glfw.h"
-#  include <OpenGL/glext.h>
 #  include <OpenGL/gl3ext.h>
-#else
+#elif defined(X11)
 #  define GL_GLEXT_PROTOTYPES
-#  include <GL/glfw.h>
-#  include <GL/glext.h>
+#  include "glfw.h"
+#  include "glext.h"
+#else
+#  error "This platform is not supported."
 #endif
 
 namespace gg
@@ -848,7 +847,7 @@ namespace gg
     {
       GLfloat t[16];
       multiply(t, array, a);
-      memcpy(array, t, sizeof array);
+      for (int i = 0; i < 16; ++i) array[i] = t[i];
       return *this;
     }
     GgMatrix &multiply(const GgMatrix &m)
@@ -887,7 +886,7 @@ namespace gg
     // •ÏŠ·s—ñ‚Ì“Ç‚Ýž‚Ý
     GgMatrix &load(const GLfloat *a)
     {
-      memcpy(array, a, sizeof array);
+      for (int i = 0; i < 16; ++i) array[i] = a[i];
       return *this;
     }
     GgMatrix &load(const GgMatrix &m)
