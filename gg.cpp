@@ -2924,7 +2924,7 @@ gg::GgMatrix &gg::GgMatrix::loadNormal(const GgMatrix &m)
 }
 
 /*
-** 変換行列：視野変換行列を設定する
+** 変換行列：ビュー変換行列を設定する
 */
 gg::GgMatrix &gg::GgMatrix::loadLookat(GLfloat ex, GLfloat ey, GLfloat ez, GLfloat tx, GLfloat ty, GLfloat tz, GLfloat ux, GLfloat uy, GLfloat uz)
 {
@@ -3042,7 +3042,7 @@ gg::GgMatrix &gg::GgMatrix::loadPerspective(GLfloat fovy, GLfloat aspect, GLfloa
 }
 
 /*
-** 変換行列：視野変換行列を乗じる（視点の移動）
+** 変換行列：ビュー変換行列を乗じる（視点の移動）
 */
 gg::GgMatrix &gg::GgMatrix::lookat(GLfloat ex, GLfloat ey, GLfloat ez, GLfloat tx, GLfloat ty, GLfloat tz, GLfloat ux, GLfloat uy, GLfloat uz)
 {

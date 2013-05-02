@@ -921,7 +921,7 @@ namespace gg
       return loadRotate(r[0], r[1], r[2], r[3]);
     }
 
-    // 視野変換行列を設定する
+    // ビュー変換行列を設定する
     GgMatrix &loadLookat(GLfloat ex, GLfloat ey, GLfloat ez, GLfloat tx, GLfloat ty, GLfloat tz, GLfloat ux, GLfloat uy, GLfloat uz);
     GgMatrix &loadLookat(const GLfloat *e, const GLfloat *t, const GLfloat *u)
     {
@@ -1006,7 +1006,7 @@ namespace gg
       return rotate(r[0], r[1], r[2], r[3]);
     }
 
-    // 視野変換を乗じる
+    // ビュー変換を乗じる
     GgMatrix &lookat(GLfloat ex, GLfloat ey, GLfloat ez, GLfloat tx, GLfloat ty, GLfloat tz, GLfloat ux, GLfloat uy, GLfloat uz);
     GgMatrix &lookat(const GLfloat *e, const GLfloat *t, const GLfloat *u)
     {
