@@ -1492,7 +1492,11 @@ namespace gg
     // デストラクタ
     virtual ~GgTexture(void)
     {
-      if (dec() == 0) glDeleteTextures(1, &texture);
+      if (dec() == 0)
+      {
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glDeleteTextures(1, &texture);
+      }
     }
 
     // コンストラクタ
@@ -1505,14 +1509,12 @@ namespace gg
       glGenTextures(1, &texture);
       glBindTexture(GL_TEXTURE_2D, texture);
       ggLoadTexture(width, height, internal, format, image);
-      glBindTexture(GL_TEXTURE_2D, 0);
     }
     GgTexture(const char *name, GLenum internal = GL_RGBA)
     {
       glGenTextures(1, &texture);
       glBindTexture(GL_TEXTURE_2D, texture);
       ggLoadImage(name, internal);
-      glBindTexture(GL_TEXTURE_2D, 0);
     }
     GgTexture(const GgTexture &o)
       : GgAttribute(o), texture(o.texture) {}
@@ -1604,7 +1606,11 @@ namespace gg
     // デストラクタ
     virtual ~GgShader(void)
     {
-      if (dec() == 0 && program != 0) glDeleteProgram(program);
+      if (dec() == 0 && program != 0)
+      {
+        glUseProgram(0);
+        glDeleteProgram(program);
+      }
     }
 
     // コンストラクタ
@@ -1646,7 +1652,7 @@ namespace gg
     }
 
     // シェーダプログラムの使用を開始する
-    virtual void use(GLuint vert, ...) const
+    virtual void use(void) const
     {
       glUseProgram(program);
     }
@@ -1654,7 +1660,6 @@ namespace gg
     // シェーダプログラムの使用を終了する
     virtual void unuse(void) const
     {
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
       glUseProgram(0);
     }
 
@@ -1677,6 +1682,9 @@ namespace gg
     // バッファオブジェクト
     GLuint buffer;
 
+    // ターゲット
+    GLenum target;
+
     // データ数
     GLuint number;
 
@@ -1685,7 +1693,11 @@ namespace gg
     // デストラクタ
     virtual ~GgBuffer<T>(void)
     {
-      if (dec() == 0) glDeleteBuffers(1, &buffer);
+      if (dec() == 0)
+      {
+        glBindBuffer(target, 0);
+        glDeleteBuffers(1, &buffer);
+      }
     }
 
     // コンストラクタ
@@ -1694,13 +1706,13 @@ namespace gg
     {
       glGenBuffers(1, &buffer);
     }
-    GgBuffer<T>(GLenum target, GLuint n, const T *data, GLenum usage = GL_STATIC_DRAW)
+    GgBuffer<T>(GLenum target, GLuint number, const T *data, GLenum usage = GL_STATIC_DRAW)
     {
       glGenBuffers(1, &buffer);
-      load(target, n, data, usage);
+      load(target, number, data, usage);
     }
     GgBuffer<T>(const GgBuffer<T> &o)
-      : GgAttribute(o), buffer(o.buffer), number(o.number) {}
+      : GgAttribute(o), buffer(o.buffer), target(o.target), number(o.number) {}
 
     // 代入
     GgBuffer<T> &operator=(const GgBuffer<T> &o)
@@ -1709,17 +1721,19 @@ namespace gg
       {
         GgAttribute::operator=(o);
         buffer = o.buffer;
+        target = o.target;
         number = o.number;
       }
       return *this;
     }
 
     // バッファオブジェクトにデータを格納する
-    void load(GLenum target, GLuint n, const T *data, GLenum usage = GL_STATIC_DRAW)
+    void load(GLenum target, GLuint number, const T *data, GLenum usage = GL_STATIC_DRAW)
     {
-      number = n;
+      this->target = target;
+      this->number = number;
       glBindBuffer(target, buffer);
-      glBufferData(target, sizeof (T) * n, data, usage);
+      glBufferData(target, sizeof (T) * number, data, usage);
     }
 
     // バッファオブジェクトのデータを複写する
@@ -1767,10 +1781,11 @@ namespace gg
   class GgShape
     : public Gg
   {
+    // 頂点配列オブジェクト
+    GLuint vao;
+
     // シェーダー
     GgShader *shader;
-
-  protected:
 
     // 描画図形
     GLenum mode;
@@ -1778,35 +1793,60 @@ namespace gg
   public:
 
     // デストラクタ
-    virtual ~GgShape(void) {}
+    virtual ~GgShape(void)
+    {
+      glBindVertexArray(0);
+      glDeleteVertexArrays(1, &vao);
+    }
 
     // コンストラクタ
     GgShape(void)
-      : shader(0), mode(GL_POINTS) {}
+      : shader(0), mode(GL_POINTS)
+    {
+      glGenVertexArrays(1, &vao);
+      glBindVertexArray(vao);
+    }
     GgShape(const GgShape &o)
-      : shader(o.shader), mode(o.mode) {}
+      : vao(o.vao), shader(o.shader), mode(o.mode)
+    {
+      glBindVertexArray(vao);
+    }
 
     // 代入演算子
     GgShape &operator=(const GgShape &o)
     {
       if (this != &o)
       {
+        vao = o.vao;
+        glBindVertexArray(vao);
         attachShader(o.shader);
         mode = o.mode;
       }
       return *this;
     }
 
+    // 頂点配列オブジェクトを指定する
+    void use(void) const
+    {
+        glBindVertexArray(vao);
+    }
+
+    // 頂点配列オブジェクト名を取り出す
+    GLuint get(void) const
+    {
+      return vao;
+    }
+
     // 形状データにシェーダのインスタンス s を結合する
     //    それまで結合されていたシェーダの参照カウントをデクリメントして 0 になったらそのシェーダを破棄する
     //    新しいシェーダ s を結合して s の参照カウントをインクリメントする
-    void attachShader(GgShader *s)
+    void attachShader(GgShader *shader)
     {
-      shader = s;
+      this->shader = shader;
     }
-    void attachShader(GgShader &s)
+    void attachShader(GgShader &shader)
     {
-      shader = &s;
+      this->shader = &shader;
     }
 
     // この形状データで使用しているシェーダを取り出す
@@ -1816,9 +1856,15 @@ namespace gg
     }
 
     // 描画に使う基本図形を設定する
-    void setMode(GLenum m)
+    void setMode(GLenum mode)
     {
-      mode = m;
+      this->mode = mode;
+    }
+
+    // 描画に使う基本図形を取り出す
+    GLenum getMode(void) const
+    {
+      return mode;
     }
 
     // この形状を描画する手続きをオーバーライドする
@@ -1844,7 +1890,7 @@ namespace gg
     GgPoints(GLuint n, const GLfloat (*pos)[3], GLenum usage = GL_STATIC_DRAW)
     {
       load(n, pos, usage);
-      mode = GL_POINTS;
+      setMode(GL_POINTS);
     }
     GgPoints(const GgPoints &o)
       : GgShape(o), position(o.position) {}
@@ -1865,6 +1911,10 @@ namespace gg
     void load(GLuint n, const GLfloat (*pos)[3], GLenum usage = GL_STATIC_DRAW)
     {
       position.load(GL_ARRAY_BUFFER, n, pos, usage);
+
+      // このバッファオブジェクトは index == 0 の in 変数から入力する
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+      glEnableVertexAttribArray(0);
     }
 
     // バッファオブジェクト名を取り出す
@@ -1903,7 +1953,7 @@ namespace gg
       : GgPoints(n, pos, usage)
     {
       normal.load(GL_ARRAY_BUFFER, n, norm, usage);
-      mode = GL_TRIANGLES;
+      setMode(GL_TRIANGLES);
     }
     GgTriangles(const GgTriangles &o)
       : GgPoints(o), normal(o.normal) {}
@@ -1925,6 +1975,10 @@ namespace gg
     {
       GgPoints::load(n, pos, usage);
       normal.load(GL_ARRAY_BUFFER, n, norm, usage);
+
+      // このバッファオブジェクトは index == 1 の in 変数から入力する
+      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+      glEnableVertexAttribArray(1);
     }
 
     // バッファオブジェクト名を取り出す

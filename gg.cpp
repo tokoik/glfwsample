@@ -3390,11 +3390,14 @@ void gg::GgTrackball::stop(int x, int y)
 */
 void gg::GgPoints::draw(void) const
 {
+  // 頂点配列オブジェクトを指定する
+  use();
+
   // シェーダプログラムの使用を開始する
-  getShader()->use(pbuf());
+  getShader()->use();
 
   // 図形を描画する
-  glDrawArrays(mode, 0, pnum());
+  glDrawArrays(getMode(), 0, pnum());
 
   // シェーダプログラムの使用を終了する
   getShader()->unuse();
@@ -3405,11 +3408,14 @@ void gg::GgPoints::draw(void) const
 */
 void gg::GgTriangles::draw(void) const
 {
+  // 頂点配列オブジェクトを指定する
+  use();
+
   // シェーダプログラムの使用を開始する
-  getShader()->use(pbuf(), nbuf());
+  getShader()->use();
 
   // 図形を描画する
-  glDrawArrays(mode, 0, pnum());
+  glDrawArrays(getMode(), 0, pnum());
 
   // シェーダプログラムの使用を終了する
   getShader()->unuse();
@@ -3420,17 +3426,14 @@ void gg::GgTriangles::draw(void) const
 */
 void gg::GgElements::draw(void) const
 {
-  // シェーダプログラムの使用を開始する
-  getShader()->use(pbuf(), nbuf());
+  // 頂点配列オブジェクトを指定する
+  use();
 
-  // インデックスにバッファオブジェクトを指定する
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fbuf());
+  // シェーダプログラムの使用を開始する
+  getShader()->use();
 
   // 図形を描画する
-  glDrawElements(mode, fnum() * 3, GL_UNSIGNED_INT, 0);
-
-  // バッファオブジェクトの指定を解除する
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  glDrawElements(getMode(), fnum() * 3, GL_UNSIGNED_INT, 0);
 
   // シェーダプログラムの使用を終了する
   getShader()->unuse();
