@@ -178,7 +178,8 @@ int main(int argc, const char * argv[])
   // バーテックスシェーダのソースプログラム
   static const GLchar vsrc[] =
     "#version 150 core\n"
-    "in vec4 pv;\n"
+    "#extension GL_ARB_explicit_attrib_location: enable\n"
+    "layout (location = 0) in vec4 pv;\n"
     "void main(void)\n"
     "{\n"
     "  gl_Position = pv;\n"
@@ -187,7 +188,8 @@ int main(int argc, const char * argv[])
   // フラグメントシェーダのソースプログラム
   static const GLchar fsrc[] =
     "#version 150 core\n"
-    "out vec4 fc;\n"
+    "#extension GL_ARB_explicit_attrib_location: enable\n"
+    "layout (location = 0) out vec4 fc;\n"
     "void main(void)\n"
     "{\n"
     "  fc = vec4(1.0, 0.0, 0.0, 1.0);\n"
