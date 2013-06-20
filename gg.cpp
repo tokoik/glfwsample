@@ -3381,12 +3381,8 @@ void gg::GgTrackball::motion(int x, int y)
 
     if (a != 0.0)
     {
-      // 回転軸と回転角から四元数を作る
-      GgQuaternion dq;
-      dq.loadRotate(dy, dx, 0.0f, a * 6.283185f);
-
       // 現在の回転の四元数に作った四元数を掛けて合成する
-      tq = dq * cq;
+      tq = ggRotateQuaternion(dy, dx, 0.0f, a * 6.283185f) * cq;
 
       // 合成した四元数から回転の変換行列を求める
       tq.getMatrix(rt);
