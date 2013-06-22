@@ -858,13 +858,22 @@ namespace gg
     {
       return loadMultiply(m.array, n.array);
     }
+    GgMatrix &loadMultiply(const GLfloat *a, const GgMatrix &m)
+    {
+      return loadMultiply(a, m.array);
+    }
     GgMatrix &loadMultiply(const GgMatrix &m, const GLfloat *a)
     {
       return loadMultiply(m.array, a);
     }
-    GgMatrix &loadMultiply(const GLfloat *a, const GgMatrix &m)
+    GgMatrix &loadMultiply(const GLfloat *a)
     {
-      return loadMultiply(a, m.array);
+      GgMatrix t = *this;
+      return loadMultiply(t, a);
+    }
+    GgMatrix &loadMultiply(const GgMatrix &m)
+    {
+      return loadMultiply(m.array);
     }
     GgMatrix multiply(const GLfloat *a) const
     {
@@ -896,11 +905,11 @@ namespace gg
     }
     GgMatrix &operator*=(const GLfloat *a)
     {
-      return loadMultiply(array, a);
+      return loadMultiply(a);
     }
     GgMatrix &operator*=(const GgMatrix &m)
     {
-      return loadMultiply(array, m);
+      return loadMultiply(m);
     }
 
     // 単位行列を設定する
@@ -925,6 +934,10 @@ namespace gg
     GgMatrix &loadRotateY(GLfloat a);
     GgMatrix &loadRotateZ(GLfloat a);
     GgMatrix &loadRotate(GLfloat x, GLfloat y, GLfloat z, GLfloat a);
+    GgMatrix &loadRotate(const GLfloat *r, GLfloat a)
+    {
+      return loadRotate(r[0], r[1], r[2], a);
+    }
     GgMatrix &loadRotate(const GLfloat *r)
     {
       return loadRotate(r[0], r[1], r[2], r[3]);
@@ -1006,6 +1019,10 @@ namespace gg
       GgMatrix m;
       return multiply(m.loadRotate(x, y, z, a));
     }
+    GgMatrix rotate(const GLfloat *r, GLfloat a) const
+    {
+      return rotate(r[0], r[1], r[2], a);
+    }
     GgMatrix rotate(const GLfloat *r) const
     {
       return rotate(r[0], r[1], r[2], r[3]);
@@ -1068,6 +1085,144 @@ namespace gg
       return array;
     }
   };
+
+  // 単位行列を求める
+  inline GgMatrix ggIdentity(void)
+  {
+    GgMatrix t;
+    t.loadIdentity();
+    return t;
+  };
+
+  // 平行移動の変換行列を求める
+  inline GgMatrix ggTranslate(GLfloat x, GLfloat y, GLfloat z, GLfloat w = 1.0f)
+  {
+    GgMatrix m;
+    m.loadTranslate(x, y, z, w);
+    return m;
+  }
+  inline GgMatrix ggTranslate(const GLfloat *t)
+  {
+    GgMatrix m;
+    m.loadTranslate(t[0], t[1], t[2]);
+    return m;
+  }
+
+  // 拡大縮小の変換行列を求める
+  inline GgMatrix ggScale(GLfloat x, GLfloat y, GLfloat z, GLfloat w = 1.0f)
+  {
+    GgMatrix m;
+    m.loadScale(x, y, z, w);
+    return m;
+  }
+  inline GgMatrix ggScale(const GLfloat *s)
+  {
+    GgMatrix m;
+    m.loadScale(s[0], s[1], s[2]);
+    return m;
+  }
+
+  // 回転の変換行列を求める
+  inline GgMatrix ggRotateX(GLfloat a)
+  {
+    GgMatrix m;
+    m.loadRotateX(a);
+    return m;
+  }
+  inline GgMatrix ggRotateY(GLfloat a)
+  {
+    GgMatrix m;
+    m.loadRotateY(a);
+    return m;
+  }
+  inline GgMatrix ggRotateZ(GLfloat a)
+  {
+    GgMatrix m;
+    m.loadRotateZ(a);
+    return m;
+  }
+  inline GgMatrix ggRotate(GLfloat x, GLfloat y, GLfloat z, GLfloat a)
+  {
+    GgMatrix m;
+    m.loadRotate(x, y, z, a);
+    return m;
+  }
+  inline GgMatrix ggRotate(const GLfloat *r, GLfloat a)
+  {
+    GgMatrix m;
+    m.loadRotate(r[0], r[1], r[2], a);
+    return m;
+  }
+  inline GgMatrix ggRotate(const GLfloat *r)
+  {
+    GgMatrix m;
+    m.loadRotate(r[0], r[1], r[2], r[3]);
+    return m;
+  }
+
+  // ビュー変換行列を求める
+  inline GgMatrix ggLookat(
+    GLfloat ex, GLfloat ey, GLfloat ez,     // 視点の位置
+    GLfloat tx, GLfloat ty, GLfloat tz,     // 目標点の位置
+    GLfloat ux, GLfloat uy, GLfloat uz      // 上方向のベクトル
+    )
+  {
+    GgMatrix m;
+    m.loadLookat(ex, ey, ez, tx, ty, tz, ux, uy, uz);
+    return m;
+  }
+  inline GgMatrix ggLookat(
+    const GLfloat *e,                       // 視点の位置
+    const GLfloat *t,                       // 目標点の位置
+    const GLfloat *u                        // 上方向のベクトル
+    )
+  {
+    GgMatrix m;
+    m.loadLookat(e[0], e[1], e[2], t[0], t[1], t[2], u[0], u[1], u[2]);
+    return m;
+  }
+
+  // 直交投影変換行列を求める
+  inline GgMatrix ggOrthogonal(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
+  {
+    GgMatrix m;
+    m.loadOrthogonal(left, right, bottom, top, zNear, zFar);
+    return m;
+  }
+
+  // 透視透視投影変換行列を求める
+  inline GgMatrix ggFrustum(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
+  {
+    GgMatrix m;
+    m.loadFrustum(left, right, bottom, top, zNear, zFar);
+    return m;
+  }
+
+  // 画角を指定して透視投影変換行列を求める
+  inline GgMatrix ggPerspective(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar)
+  {
+    GgMatrix m;
+    m.loadPerspective(fovy, aspect, zNear, zFar);
+    return m;
+  }
+
+  // 転置行列を求める
+  inline GgMatrix ggTranspose(const GgMatrix &m)
+  {
+    return m.transpose();
+  }
+
+  // 逆行列を求める
+  inline GgMatrix ggInvert(const GgMatrix &m)
+  {
+    return m.invert();
+  }
+
+  // 法線変換行列を求める
+  inline GgMatrix ggNormal(const GgMatrix &m)
+  {
+    return m.normal();
+  }
 
   /*
   ** 四元数
@@ -1144,13 +1299,21 @@ namespace gg
     {
       return loadAdd(q.array, r.array);
     }
+    GgQuaternion &loadAdd(const GLfloat *a, const GgQuaternion &q)
+    {
+      return loadAdd(a, q.array);
+    }
     GgQuaternion &loadAdd(const GgQuaternion &q, const GLfloat *a)
     {
       return loadAdd(q.array, a);
     }
-    GgQuaternion &loadAdd(const GLfloat *a, const GgQuaternion &q)
+    GgQuaternion &loadAdd(const GLfloat *a)
     {
-      return loadAdd(a, q.array);
+      return loadAdd(array, a);
+    }
+    GgQuaternion &loadAdd(const GgQuaternion &q)
+    {
+      return loadAdd(q.array);
     }
     GgQuaternion add(const GLfloat *a) const
     {
@@ -1173,13 +1336,21 @@ namespace gg
     {
       return loadSubtract(q.array, r.array);
     }
+    GgQuaternion &loadSubtract(const GLfloat *a, const GgQuaternion &q)
+    {
+      return loadSubtract(a, q.array);
+    }
     GgQuaternion &loadSubtract(const GgQuaternion &q, const GLfloat *a)
     {
       return loadSubtract(q.array, a);
     }
-    GgQuaternion &loadSubtract(const GLfloat *a, const GgQuaternion &q)
+    GgQuaternion &loadSubtract(const GLfloat *a)
     {
-      return loadSubtract(a, q.array);
+      return loadSubtract(array, a);
+    }
+    GgQuaternion &loadSubtract(const GgQuaternion &q)
+    {
+      return loadSubtract(q.array);
     }
     GgQuaternion subtract(const GLfloat *a) const
     {
@@ -1202,13 +1373,22 @@ namespace gg
     {
       return loadMultiply(q.array, r.array);
     }
+    GgQuaternion &loadMultiply(const GLfloat *a, const GgQuaternion &q)
+    {
+      return loadMultiply(a, q.array);
+    }
     GgQuaternion &loadMultiply(const GgQuaternion &q, const GLfloat *a)
     {
       return loadMultiply(q.array, a);
     }
-    GgQuaternion &loadMultiply(const GLfloat *a, const GgQuaternion &q)
+    GgQuaternion &loadMultiply(const GLfloat *a)
     {
-      return loadMultiply(a, q.array);
+      GgQuaternion t = *this;
+      return loadMultiply(t.array, a);
+    }
+    GgQuaternion &loadMultiply(const GgQuaternion &q)
+    {
+      return loadMultiply(q.array);
     }
     GgQuaternion multiply(const GLfloat *a) const
     {
@@ -1240,11 +1420,11 @@ namespace gg
     }
     GgQuaternion &operator+=(const GLfloat *a)
     {
-      return loadAdd(array, a);
+      return loadAdd(a);
     }
     GgQuaternion &operator+=(const GgQuaternion &q)
     {
-      return loadAdd(array, q);
+      return loadAdd(q);
     }
     GgQuaternion operator-(const GLfloat *a) const
     {
@@ -1256,11 +1436,11 @@ namespace gg
     }
     GgQuaternion &operator-=(const GLfloat *a)
     {
-      return loadSubtract(array, a);
+      return loadSubtract(a);
     }
     GgQuaternion &operator-=(const GgQuaternion &q)
     {
-      return loadSubtract(array, q);
+      return loadSubtract(q);
     }
     GgQuaternion operator*(const GLfloat *a) const
     {
@@ -1272,11 +1452,11 @@ namespace gg
     }
     GgQuaternion &operator*=(const GLfloat *a)
     {
-      return loadMultiply(array, a);
+      return loadMultiply(a);
     }
     GgQuaternion &operator*=(const GgQuaternion &q)
     {
-      return loadMultiply(array, q);
+      return loadMultiply(q);
     }
 
     // 回転の変換行列 m を表す四元数を設定する
@@ -1392,6 +1572,108 @@ namespace gg
       toMatrix(m, array);
     }
   };
+
+  // 回転の変換行列 m を表す四元数を求める
+  inline GgQuaternion ggMatrixQuaternion(const GLfloat *m)
+  {
+    GgQuaternion t;
+    t.loadMatrix(m);
+    return t;
+  }
+  inline GgQuaternion ggMatrixQuaternion(const GgMatrix &m)
+  {
+    return ggMatrixQuaternion(m.get());
+  }
+
+  // 四元数 q の回転の変換行列を求める
+  inline GgMatrix ggQuaternionMatrix(const GgQuaternion &q)
+  {
+    GLfloat m[16];
+    q.getMatrix(m);
+    GgMatrix t;
+    t.load(m);
+    return t;
+  }
+
+  // 単位元を求める
+  inline GgQuaternion ggIdentityQuaternion(void)
+  {
+    GgQuaternion t;
+    t.loadIdentity();
+    return t;
+  }
+
+  // (x, y, z) を軸として角度 a 回転する四元数を求める
+  inline GgQuaternion ggRotateQuaternion(GLfloat x, GLfloat y, GLfloat z, GLfloat a)
+  {
+    GgQuaternion t;
+    t.loadRotate(x, y, z, a);
+    return t;
+  }
+  inline GgQuaternion ggRotateQuaternion(const GLfloat *v, GLfloat a)
+  {
+    return ggRotateQuaternion(v[0], v[1], v[2], a);
+  }
+  inline GgQuaternion ggRotateQuaternion(const GLfloat *v)
+  {
+    return ggRotateQuaternion(v[0], v[1], v[2], v[3]);
+  }
+
+  // オイラー角 (h, p, r) で与えられた回転を表す四元数を求める
+  inline GgQuaternion ggEulerQuaternion(GLfloat h, GLfloat p, GLfloat r)
+  {
+    GgQuaternion t;
+    t.loadEuler(h, p, r);
+    return t;
+  }
+  inline GgQuaternion ggEulerQuaternion(const GLfloat *e)
+  {
+    return ggEulerQuaternion(e[0], e[1], e[2]);
+  }
+
+  // 球面線形補間
+  inline GgQuaternion ggSlerpQuaternion(const GLfloat *a, const GLfloat *b, GLfloat t)
+  {
+    GgQuaternion q;
+    q.loadSlerp(a, b, t);
+    return q;
+  }
+  inline GgQuaternion ggSlerpQuaternion(const GgQuaternion &q, const GgQuaternion &r, GLfloat t)
+  {
+    return ggSlerpQuaternion(q.get(), r.get(), t);
+  }
+  inline GgQuaternion ggSlerpQuaternion(const GgQuaternion &q, const GLfloat *a, GLfloat t)
+  {
+    return ggSlerpQuaternion(q.get(), a, t);
+  }
+  inline GgQuaternion ggSlerpQuaternion(const GLfloat *a, const GgQuaternion &q, GLfloat t)
+  {
+    return ggSlerpQuaternion(a, q.get(), t);
+  }
+
+  // 四元数のノルムを求める
+  inline GLfloat ggNormQuaternion(const GgQuaternion &q)
+  {
+    return q.norm();
+  }
+
+  // 共役四元数を求める
+  inline GgQuaternion ggConjugateQuaternion(const GgQuaternion &q)
+  {
+    return q.conjugate();
+  }
+
+  // 四元数の逆を求める
+  inline GgQuaternion ggInvertQuaternion(const GgQuaternion &q)
+  {
+    return q.invert();
+  }
+
+  // 正規化した四元数を求める
+  inline GgQuaternion normalize(const GgQuaternion &q)
+  {
+    return q.normalize();
+  }
 
   /*
   ** 簡易トラックボール処理
@@ -1846,9 +2128,6 @@ namespace gg
     // 頂点配列オブジェクト
     GLuint vao;
 
-    // 描画図形
-    GLenum mode;
-
   public:
 
     // デストラクタ
@@ -1860,13 +2139,12 @@ namespace gg
 
     // コンストラクタ
     GgShape(void)
-      : mode(GL_POINTS)
     {
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
     }
     GgShape(const GgShape &o)
-      : vao(o.vao), mode(o.mode)
+      : vao(o.vao)
     {
       glBindVertexArray(vao);
     }
@@ -1878,7 +2156,6 @@ namespace gg
       {
         vao = o.vao;
         glBindVertexArray(vao);
-        mode = o.mode;
       }
       return *this;
     }
@@ -1889,26 +2166,20 @@ namespace gg
       glBindVertexArray(vao);
     }
 
+    // 頂点配列オブジェクトの指定を解除する
+    void unuse(void) const
+    {
+      glBindVertexArray(0);
+    }
+
     // 頂点配列オブジェクト名を取り出す
     GLuint get(void) const
     {
       return vao;
     }
 
-    // 描画に使う基本図形を設定する
-    void setMode(GLenum mode)
-    {
-      this->mode = mode;
-    }
-
-    // 描画に使う基本図形を取り出す
-    GLenum getMode(void) const
-    {
-      return mode;
-    }
-
     // この形状を描画する手続きをオーバーライドする
-    virtual void draw(void) const = 0;
+    virtual void draw(GLenum mode = GL_POINTS) const = 0;
   };
 
   /*
@@ -1934,7 +2205,6 @@ namespace gg
       )
     {
       load(nv, pos, usage);
-      setMode(GL_POINTS);
     }
     GgPoints(const GgPoints &o)
       : GgShape(o), position(o.position) {}
@@ -1987,7 +2257,7 @@ namespace gg
     }
 
     // ポイントの描画
-    virtual void draw(void) const;
+    virtual void draw(GLenum mode = GL_POINTS) const;
   };
 
   /*
@@ -2014,7 +2284,6 @@ namespace gg
       )
     {
       load(nv, pos, norm);
-      setMode(GL_TRIANGLES);
     }
     GgTriangles(const GgTriangles &o)
       : GgPoints(o), normal(o.normal) {}
@@ -2071,7 +2340,7 @@ namespace gg
     }
 
     // 三角形群を描画する手続き
-    virtual void draw(void) const;
+    virtual void draw(GLenum mode = GL_TRIANGLE_FAN) const;
   };
 
   /*
@@ -2154,7 +2423,7 @@ namespace gg
     }
 
     // 三角形ポリゴンを描画する手続き
-    virtual void draw(void) const;
+    virtual void draw(GLenum mode = GL_TRIANGLES) const;
   };
 
   /*

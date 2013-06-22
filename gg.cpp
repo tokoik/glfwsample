@@ -3381,12 +3381,8 @@ void gg::GgTrackball::motion(int x, int y)
 
     if (a != 0.0)
     {
-      // 回転軸と回転角から四元数を作る
-      GgQuaternion dq;
-      dq.loadRotate(dy, dx, 0.0f, a * 6.283185f);
-
       // 現在の回転の四元数に作った四元数を掛けて合成する
-      tq = dq * cq;
+      tq = ggRotateQuaternion(dy, dx, 0.0f, a * 6.283185f) * cq;
 
       // 合成した四元数から回転の変換行列を求める
       tq.getMatrix(rt);
@@ -3415,37 +3411,37 @@ void gg::GgTrackball::stop(int x, int y)
 /*
 ** ポイント：描画
 */
-void gg::GgPoints::draw(void) const
+void gg::GgPoints::draw(GLenum mode) const
 {
   // 頂点配列オブジェクトを指定する
   use();
 
   // 図形を描画する
-  glDrawArrays(getMode(), 0, pnum());
+  glDrawArrays(mode, 0, pnum());
 }
 
 /*
 ** ポリゴン：描画
 */
-void gg::GgTriangles::draw(void) const
+void gg::GgTriangles::draw(GLenum mode) const
 {
   // 頂点配列オブジェクトを指定する
   use();
 
   // 図形を描画する
-  glDrawArrays(getMode(), 0, pnum());
+  glDrawArrays(mode, 0, pnum());
 }
 
 /*
 ** オブジェクト：描画
 */
-void gg::GgElements::draw(void) const
+void gg::GgElements::draw(GLenum mode) const
 {
   // 頂点配列オブジェクトを指定する
   use();
 
   // 図形を描画する
-  glDrawElements(getMode(), fnum() * 3, GL_UNSIGNED_INT, 0);
+  glDrawElements(mode, fnum() * 3, GL_UNSIGNED_INT, 0);
 }
 
 /*
@@ -3511,7 +3507,6 @@ gg::GgTriangles *gg::ggRectangle(GLfloat width, GLfloat height)
 
   // ポリゴンの作成
   GgTriangles *rectangle = new gg::GgTriangles(4, pos, norm);
-  rectangle->setMode(GL_TRIANGLE_FAN);
 
   return rectangle;
 }
@@ -3552,7 +3547,6 @@ gg::GgTriangles *gg::ggEllipse(GLfloat width, GLfloat height, GLuint slices)
 
   // ポリゴンの作成
   GgTriangles *ellipse = new gg::GgTriangles(slices, pos, norm);
-  ellipse->setMode(GL_TRIANGLE_FAN);
 
   // 作業用のメモリの解放
   delete[] pos;
