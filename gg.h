@@ -342,7 +342,7 @@ extern PFNGLCLEARBUFFERIVPROC glClearBufferiv;
 extern PFNGLCLEARBUFFERUIVPROC glClearBufferuiv;
 extern PFNGLCLEARBUFFERFVPROC glClearBufferfv;
 extern PFNGLCLEARBUFFERFIPROC glClearBufferfi;
-extern PFN*PROC *;
+extern PFNGLGETSTRINGIPROC glGetStringi;
 extern PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced;
 extern PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced;
 extern PFNGLTEXBUFFERPROC glTexBuffer;
