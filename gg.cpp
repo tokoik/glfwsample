@@ -5213,6 +5213,7 @@ namespace gg
     rgb kd;       // diffuse
     rgb ks;       // specular
     float kshi;   // shininess
+    float kdiss;  // dissolve
   };
 
   // 読み込み用のテンポラリデータの形式
@@ -5280,7 +5281,7 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
   mtl[mtlname].ks.r = 0.3f;
   mtl[mtlname].ks.g = 0.3f;
   mtl[mtlname].ks.b = 0.3f;
-  mtl[mtlname].kshi = 40.0f;
+  mtl[mtlname].kshi = 60.0f;
 
   // 読み込み用の一時記憶領域
   std::vector<vtx> _pos;
@@ -5447,9 +5448,13 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
           else if (mtlop == "Ns")
           {
             // 輝き係数を登録する
-            float kshi;
-            mtlstr >> kshi;
-            mtl[mtlname].kshi = kshi * 0.1f;
+            float shininess;
+            mtlstr >> mtl[mtlname].kshi;
+          }
+          else if (mtlop == "d")
+          {
+            // 不透明度を登録する
+            mtlstr >> mtl[mtlname].kdiss;
           }
         }
 
@@ -5671,19 +5676,19 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
     ka[ng][0] = g->m->ka.r;
     ka[ng][1] = g->m->ka.g;
     ka[ng][2] = g->m->ka.b;
-    ka[ng][3] = 1.0f;
+    ka[ng][3] = g->m->kdiss;
 
     // 面グループの拡散反射係数
     kd[ng][0] = g->m->kd.r;
     kd[ng][1] = g->m->kd.g;
     kd[ng][2] = g->m->kd.b;
-    kd[ng][3] = 1.0f;
+    kd[ng][3] = 0.0f;
 
     // 面グループの鏡面反射係数
     ks[ng][0] = g->m->ks.r;
     ks[ng][1] = g->m->ks.g;
     ks[ng][2] = g->m->ks.b;
-    ks[ng][3] = 1.0f;
+    ks[ng][3] = 0.0f;
 
     // 面グループの輝き係数
     kshi[ng] = g->m->kshi;
