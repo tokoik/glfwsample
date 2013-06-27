@@ -5675,19 +5675,19 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
     ka[ng][0] = g->m->ka.r;
     ka[ng][1] = g->m->ka.g;
     ka[ng][2] = g->m->ka.b;
-    ka[ng][3] = g->m->kdiss;
+    ka[ng][3] = 1.0f;
 
     // –ÊƒOƒ‹[ƒv‚ÌŠgŽU”½ŽËŒW”
     kd[ng][0] = g->m->kd.r;
     kd[ng][1] = g->m->kd.g;
     kd[ng][2] = g->m->kd.b;
-    kd[ng][3] = 0.0f;
+    kd[ng][3] = g->m->kdiss;
 
     // –ÊƒOƒ‹[ƒv‚Ì‹¾–Ê”½ŽËŒW”
     ks[ng][0] = g->m->ks.r;
     ks[ng][1] = g->m->ks.g;
     ks[ng][2] = g->m->ks.b;
-    ks[ng][3] = 0.0f;
+    ks[ng][3] = 1.0f;
 
     // –ÊƒOƒ‹[ƒv‚Ì‹P‚«ŒW”
     kshi[ng] = g->m->kshi;
