@@ -5448,7 +5448,6 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
           else if (mtlop == "Ns")
           {
             // ‹P‚«ŒW”‚ð“o˜^‚·‚é
-            float shininess;
             mtlstr >> mtl[mtlname].kshi;
           }
           else if (mtlop == "d")
