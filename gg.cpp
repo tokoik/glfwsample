@@ -4655,14 +4655,14 @@ bool gg::ggSaveColor(const char *name)
   // 画面表示の完了を待つ
   glFinish();
 
-  // カラーバッファの読み込み
+  // カラーバッファを読み込む
   glReadPixels(viewport[0], viewport[1], viewport[2], viewport[3],
     GL_BGR, GL_UNSIGNED_BYTE, buffer);
 
   // 読み込んだデータをファイルに書き込む
   bool ret = ggSaveTga(viewport[2], viewport[3], 3, buffer, name);
 
-  // メモリの解放
+  // 読み込みに使ったメモリを解放する
   delete[] buffer;
 
   return ret;
@@ -4694,14 +4694,14 @@ bool gg::ggSaveDepth(const char *name)
   // 画面表示の完了を待つ
   glFinish();
 
-  // デプスバッファの読み込み
+  // デプスバッファを読み込む
   glReadPixels(viewport[0], viewport[1], viewport[2], viewport[3],
     GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, buffer);
 
   // 読み込んだデータをファイルに書き込む
   bool ret = ggSaveTga(viewport[2], viewport[3], 1, buffer, name);
 
-  // メモリの解放
+  // 読み込みに使ったメモリを解放する
   delete[] buffer;
 
   return ret;
@@ -5515,11 +5515,10 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
     delete[] ks;
     delete[] kshi;
     delete[] pos;
-    delete[] norm;
     group = 0;
     ka = kd = ks = 0;
     kshi = 0;
-    pos = norm = 0;
+    pos = 0;
     return false;
   }
 
@@ -6937,7 +6936,6 @@ gg::GgElements *gg::ggElementsSphere(GLfloat radius, int slices, int stacks)
   {
     delete[] pos;
     delete[] norm;
-    delete[] face;
     throw e;
   }
 
