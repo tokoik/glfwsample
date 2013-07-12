@@ -3554,7 +3554,7 @@ namespace gg
     // デストラクタ
     virtual ~GgShader(void)
     {
-      if (dec() == 0 && program != 0)
+      if (program != 0 && decCounter() == 0)
       {
         glUseProgram(0);
         glDeleteProgram(program);
