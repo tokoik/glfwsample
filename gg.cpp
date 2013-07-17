@@ -4857,7 +4857,7 @@ bool gg::ggLoadImage(const char *name, GLenum internal)
   GLubyte *image = ggLoadTga(name, &width, &height, &format);
 
   // テクスチャメモリへの読み込み
-  ggLoadTexture(width, height, internal, format, image);
+  ggLoadTexture(width, height, internal ? internal : format, format, image);
 
   // 読み込みに使ったメモリを開放する
   delete[] image;

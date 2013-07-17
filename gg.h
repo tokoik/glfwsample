@@ -2360,7 +2360,7 @@ namespace gg
   */
   extern bool ggLoadImage(                  // 読み込みできたら true
     const char *name,                       // 読み込むファイル名
-    GLenum internal = GL_RGB                // テクスチャメモリの内部フォーマット
+    GLenum internal = 0                     // テクスチャメモリの内部フォーマット (0 なら外部フォーマットに合わせる)
     );
 
   /*
