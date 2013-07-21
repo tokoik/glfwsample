@@ -4829,7 +4829,7 @@ GLubyte *gg::ggLoadTga(const char *name, GLsizei *width, GLsizei *height, GLenum
 */
 void gg::ggLoadTexture(GLsizei width, GLsizei height, GLenum internal, GLenum format, const GLvoid *image)
 {
-  // アルファチャンネルがついていれば 4 バイト境界に設定
+  // アルファチャンネルがついていれば 4 バイト境界に設定する
   glPixelStorei(GL_UNPACK_ALIGNMENT, (format == GL_BGRA || format == GL_RGBA) ? 4 : 1);
 
   // テクスチャを割り当てる
@@ -4855,6 +4855,23 @@ bool gg::ggLoadImage(const char *name, GLenum internal)
 
   // 画像の読み込み先
   GLubyte *image = ggLoadTga(name, &width, &height, &format);
+
+  // internal == 0 なら内部フォーマットを読み込んだファイルに合わせる
+  if (internal == 0)
+  {
+    switch(format)
+    {
+    case GL_BGR:
+      internal = GL_RGB;
+      break;
+    case GL_BGRA:
+      internal = GL_RGBA;
+      break;
+    default:
+      internal = format;
+      break;
+    }
+  }
 
   // テクスチャメモリへの読み込み
   ggLoadTexture(width, height, internal, format, image);
@@ -5209,11 +5226,11 @@ namespace gg
   struct rgb { float r, g, b; };
   struct mat
   {
-    rgb ka;       // ambient
-    rgb kd;       // diffuse
-    rgb ks;       // specular
-    float kshi;   // shininess
-    float kdiss;  // dissolve
+    rgb amb;      // ambient
+    rgb diff;     // diffuse
+    rgb spec;     // specular
+    float shi;    // shininess
+    float dis;    // dissolve
   };
 
   // 読み込み用のテンポラリデータの形式
@@ -5250,7 +5267,7 @@ namespace gg
 ** 三角形分割された OBJ ファイルと MTL ファイルを読み込む
 */
 bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
-  GLfloat (*&ka)[4], GLfloat (*&kd)[4], GLfloat (*&ks)[4], GLfloat *&kshi,
+  GLfloat (*&amb)[4], GLfloat (*&diff)[4], GLfloat (*&spec)[4], GLfloat *&shi,
   GLuint &nv, GLfloat (*&pos)[3], GLfloat (*&norm)[3], bool normalize)
 {
   // ファイルパスからディレクトリ名を取り出す
@@ -5272,16 +5289,17 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
   std::string mtlname(defmtl);
 
   // デフォルトのマテリアル
-  mtl[mtlname].ka.r = 0.1f;
-  mtl[mtlname].ka.g = 0.1f;
-  mtl[mtlname].ka.b = 0.1f;
-  mtl[mtlname].kd.r = 0.6f;
-  mtl[mtlname].kd.g = 0.6f;
-  mtl[mtlname].kd.b = 0.6f;
-  mtl[mtlname].ks.r = 0.3f;
-  mtl[mtlname].ks.g = 0.3f;
-  mtl[mtlname].ks.b = 0.3f;
-  mtl[mtlname].kshi = 60.0f;
+  mtl[mtlname].amb.r = 0.1f;
+  mtl[mtlname].amb.g = 0.1f;
+  mtl[mtlname].amb.b = 0.1f;
+  mtl[mtlname].diff.r = 0.6f;
+  mtl[mtlname].diff.g = 0.6f;
+  mtl[mtlname].diff.b = 0.6f;
+  mtl[mtlname].spec.r = 0.3f;
+  mtl[mtlname].spec.g = 0.3f;
+  mtl[mtlname].spec.b = 0.3f;
+  mtl[mtlname].shi = 60.0f;
+  mtl[mtlname].dis = 1.0f;
 
   // 読み込み用の一時記憶領域
   std::vector<vtx> _pos;
@@ -5433,27 +5451,27 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
           else if (mtlop == "Ka")
           {
             // 環境光の反射係数を登録する
-            mtlstr >> mtl[mtlname].ka.r >> mtl[mtlname].ka.g >> mtl[mtlname].ka.b;
+            mtlstr >> mtl[mtlname].amb.r >> mtl[mtlname].amb.g >> mtl[mtlname].amb.b;
           }
           else if (mtlop == "Kd")
           {
             // 拡散反射係数を登録する
-            mtlstr >> mtl[mtlname].kd.r >> mtl[mtlname].kd.g >> mtl[mtlname].kd.b;
+            mtlstr >> mtl[mtlname].diff.r >> mtl[mtlname].diff.g >> mtl[mtlname].diff.b;
           }
           else if (mtlop == "Ks")
           {
             // 鏡面反射係数を登録する
-            mtlstr >> mtl[mtlname].ks.r >> mtl[mtlname].ks.g >> mtl[mtlname].ks.b;
+            mtlstr >> mtl[mtlname].spec.r >> mtl[mtlname].spec.g >> mtl[mtlname].spec.b;
           }
           else if (mtlop == "Ns")
           {
             // 輝き係数を登録する
-            mtlstr >> mtl[mtlname].kshi;
+            mtlstr >> mtl[mtlname].shi;
           }
           else if (mtlop == "d")
           {
             // 不透明度を登録する
-            mtlstr >> mtl[mtlname].kdiss;
+            mtlstr >> mtl[mtlname].dis;
           }
         }
 
@@ -5494,30 +5512,30 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
 
   // メモリの確保
   group = 0;
-  ka = kd = ks = 0;
-  kshi = 0;
+  amb = diff = spec = 0;
+  shi = 0;
   pos = norm = 0;
   try
   {
     group = new GLuint[ng][2];
-    ka = new GLfloat[ng][4];
-    kd = new GLfloat[ng][4];
-    ks = new GLfloat[ng][4];
-    kshi = new GLfloat[ng];
+    amb = new GLfloat[ng][4];
+    diff = new GLfloat[ng][4];
+    spec = new GLfloat[ng][4];
+    shi = new GLfloat[ng];
     pos = new GLfloat[nv][3];
     norm = new GLfloat[nv][3];
   }
   catch (std::bad_alloc e)
   {
     delete[] group;
-    delete[] ka;
-    delete[] kd;
-    delete[] ks;
-    delete[] kshi;
+    delete[] amb;
+    delete[] diff;
+    delete[] spec;
+    delete[] shi;
     delete[] pos;
     group = 0;
-    ka = kd = ks = 0;
-    kshi = 0;
+    amb = diff = spec = 0;
+    shi = 0;
     pos = 0;
     return false;
   }
@@ -5671,25 +5689,25 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
     group[ng][1] = g->c;
 
     // 面グループの環境光に対する反射係数
-    ka[ng][0] = g->m->ka.r;
-    ka[ng][1] = g->m->ka.g;
-    ka[ng][2] = g->m->ka.b;
-    ka[ng][3] = 1.0f;
+    amb[ng][0] = g->m->amb.r;
+    amb[ng][1] = g->m->amb.g;
+    amb[ng][2] = g->m->amb.b;
+    amb[ng][3] = 1.0f;
 
     // 面グループの拡散反射係数
-    kd[ng][0] = g->m->kd.r;
-    kd[ng][1] = g->m->kd.g;
-    kd[ng][2] = g->m->kd.b;
-    kd[ng][3] = g->m->kdiss;
+    diff[ng][0] = g->m->diff.r;
+    diff[ng][1] = g->m->diff.g;
+    diff[ng][2] = g->m->diff.b;
+    diff[ng][3] = g->m->dis;
 
     // 面グループの鏡面反射係数
-    ks[ng][0] = g->m->ks.r;
-    ks[ng][1] = g->m->ks.g;
-    ks[ng][2] = g->m->ks.b;
-    ks[ng][3] = 1.0f;
+    spec[ng][0] = g->m->spec.r;
+    spec[ng][1] = g->m->spec.g;
+    spec[ng][2] = g->m->spec.b;
+    spec[ng][3] = 1.0f;
 
     // 面グループの輝き係数
-    kshi[ng] = g->m->kshi;
+    shi[ng] = g->m->shi;
 
     // 面グループの数
     ++ng;
@@ -6638,37 +6656,25 @@ void gg::GgTrackball::stop(int x, int y)
 /*
 ** ポイント：描画
 */
-void gg::GgPoints::draw(GLenum mode) const
+void gg::GgPoints::draw(void) const
 {
   // 頂点配列オブジェクトを指定する
   use();
 
   // 図形を描画する
-  glDrawArrays(mode, 0, pnum());
-}
-
-/*
-** ポリゴン：描画
-*/
-void gg::GgTriangles::draw(GLenum mode) const
-{
-  // 頂点配列オブジェクトを指定する
-  use();
-
-  // 図形を描画する
-  glDrawArrays(mode, 0, pnum());
+  glDrawArrays(getMode(), 0, pnum());
 }
 
 /*
 ** オブジェクト：描画
 */
-void gg::GgElements::draw(GLenum mode) const
+void gg::GgElements::draw(void) const
 {
   // 頂点配列オブジェクトを指定する
   use();
 
   // 図形を描画する
-  glDrawElements(mode, fnum() * 3, GL_UNSIGNED_INT, 0);
+  glDrawElements(getMode(), fnum() * 3, GL_UNSIGNED_INT, 0);
 }
 
 /*
@@ -6694,7 +6700,7 @@ gg::GgPoints *gg::ggPointSphere(GLuint nv, GLfloat cx, GLfloat cy, GLfloat cz, G
   }
 
   // ポイントの作成
-  GgPoints *points = new gg::GgPoints(nv, pos);
+  GgPoints *points = new gg::GgPoints(nv, pos, GL_POINTS);
 
   // 作業用のメモリの解放
   delete[] pos;
@@ -6733,7 +6739,7 @@ gg::GgTriangles *gg::ggRectangle(GLfloat width, GLfloat height)
   }
 
   // ポリゴンの作成
-  GgTriangles *rectangle = new gg::GgTriangles(4, pos, norm);
+  GgTriangles *rectangle = new gg::GgTriangles(4, pos, norm, GL_TRIANGLE_FAN);
 
   return rectangle;
 }
@@ -6773,7 +6779,7 @@ gg::GgTriangles *gg::ggEllipse(GLfloat width, GLfloat height, GLuint slices)
   } 
 
   // ポリゴンの作成
-  GgTriangles *ellipse = new gg::GgTriangles(slices, pos, norm);
+  GgTriangles *ellipse = new gg::GgTriangles(slices, pos, norm, GL_TRIANGLE_FAN);
 
   // 作業用のメモリの解放
   delete[] pos;
@@ -6789,20 +6795,21 @@ gg::GgTriangles *gg::ggArraysObj(const char *name, bool normalize)
 {
   GLuint ng, nv;
   GLuint (*group)[2];
-  GLfloat (*ka)[4], (*kd)[4], (*ks)[4], *kshi;
+  GLfloat (*amb)[4], (*diff)[4], (*spec)[4], *shi;
   GLfloat (*pos)[3], (*norm)[3];
 
-  if (!ggLoadObj(name, ng, group, ka, kd, ks, kshi, nv, pos, norm, normalize)) return 0;
+  // ファイルの読み込み
+  if (!ggLoadObj(name, ng, group, amb, diff, spec, shi, nv, pos, norm, normalize)) return 0;
 
   // オブジェクトの作成
-  GgTriangles *obj = new gg::GgTriangles(nv, pos, norm);
+  GgTriangles *obj = new gg::GgTriangles(nv, pos, norm, GL_TRIANGLES);
 
   // 作業用のメモリの解放
   delete[] group;
-  delete[] ka;
-  delete[] kd;
-  delete[] ks;
-  delete[] kshi;
+  delete[] amb;
+  delete[] diff;
+  delete[] spec;
+  delete[] shi;
   delete[] pos;
   delete[] norm;
 
@@ -6821,7 +6828,7 @@ gg::GgElements *gg::ggElementsObj(const char *name, bool normalize)
   if (!ggLoadObj(name, nv, pos, norm, nf, face, normalize)) return 0;
 
   // オブジェクトの作成
-  GgElements *obj = new gg::GgElements(nv, pos, norm, nf, face);
+  GgElements *obj = new gg::GgElements(nv, pos, norm, nf, face, GL_TRIANGLES);
 
   // 作業用のメモリの解放
   delete[] pos;
@@ -6903,7 +6910,7 @@ gg::GgElements *gg::ggElementsMesh(GLfloat width, GLfloat height, int slices, in
   }
 
   // オブジェクトの作成
-  GgElements *obj = new gg::GgElements(nv, pos, norm, nf, face);
+  GgElements *obj = new gg::GgElements(nv, pos, norm, nf, face, GL_TRIANGLES);
 
   // 作業用のメモリの解放
   delete[] pos;
@@ -6990,7 +6997,7 @@ gg::GgElements *gg::ggElementsSphere(GLfloat radius, int slices, int stacks)
   }
 
   // オブジェクトの作成
-  GgElements *obj = new gg::GgElements(nv, pos, norm, nf, face);
+  GgElements *obj = new gg::GgElements(nv, pos, norm, nf, face, GL_TRIANGLES);
 
   // 作業用のメモリの解放
   delete[] pos;

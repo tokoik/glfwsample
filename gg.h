@@ -2360,7 +2360,7 @@ namespace gg
   */
   extern bool ggLoadImage(                  // 読み込みできたら true
     const char *name,                       // 読み込むファイル名
-    GLenum internal = GL_RGB                // テクスチャメモリの内部フォーマット
+    GLenum internal = 0                     // テクスチャメモリの内部フォーマット (0 なら外部フォーマットに合わせる)
     );
 
   /*
@@ -2378,7 +2378,7 @@ namespace gg
   extern bool ggLoadObj(                    // 読み込みできたら true
     const char *name,                       // 読み込むファイル名
     GLuint &nv,                             // 読み込んだデータの頂点数
-    GLfloat (*&vert)[3],                    // 読み込んだデータの頂点位置
+    GLfloat (*&pos)[3],                     // 読み込んだデータの頂点位置
     GLfloat (*&norm)[3],                    // 読み込んだデータの頂点法線
     GLuint &nf,                             // 読み込んだデータの三角形数
     GLuint (*&face)[3],                     // 読み込んだデータの三角形の頂点インデックス
@@ -2392,12 +2392,12 @@ namespace gg
     const char *name,                       // 読み込むファイル名
     GLuint &ng,                             // 読み込んだデータのポリゴングループ数
     GLuint (*&group)[2],                    // 読み込んだデータのポリゴングループの最初のポリゴンのインデックスとポリゴン数
-    GLfloat (*&ka)[4],                      // 読み込んだっデータのポリゴングループごとの環境光に対する反射係数
-    GLfloat (*&kd)[4],                      // 読み込んだっデータのポリゴングループごとの拡散反射係数
-    GLfloat (*&ks)[4],                      // 読み込んだっデータのポリゴングループごとの鏡面反射係数
-    GLfloat *&kshi,                         // 読み込んだっデータのポリゴングループごとの輝き係数
+    GLfloat (*&amb)[4],                     // 読み込んだっデータのポリゴングループごとの環境光に対する反射係数
+    GLfloat (*&diff)[4],                    // 読み込んだっデータのポリゴングループごとの拡散反射係数
+    GLfloat (*&spec)[4],                    // 読み込んだっデータのポリゴングループごとの鏡面反射係数
+    GLfloat *&shi,                          // 読み込んだっデータのポリゴングループごとの輝き係数
     GLuint &nv,                             // 読み込んだデータの頂点数
-    GLfloat (*&vert)[3],                    // 読み込んだデータの頂点位置
+    GLfloat (*&pos)[3],                     // 読み込んだデータの頂点位置
     GLfloat (*&norm)[3],                    // 読み込んだデータの頂点法線
     bool normalize = false                  // true なら読み込んだデータの大きさを正規化する
     );
@@ -3382,7 +3382,7 @@ namespace gg
     {
       return --ref->count;
     }
-    
+
     // 参照カウンタの増設
     unsigned int newCounter(void)
     {
@@ -3763,6 +3763,9 @@ namespace gg
     // 頂点配列オブジェクト
     GLuint vao;
 
+    // 図形要素
+    GLenum mode;
+
   public:
 
     // デストラクタ
@@ -3773,13 +3776,14 @@ namespace gg
     }
 
     // コンストラクタ
-    GgShape(void)
+    GgShape(GLenum mode = 0)
     {
+      this->mode = mode;
       glGenVertexArrays(1, &vao);
       glBindVertexArray(vao);
     }
     GgShape(const GgShape &o)
-      : vao(o.vao)
+      : vao(o.vao), mode(o.mode)
     {
       glBindVertexArray(vao);
     }
@@ -3790,6 +3794,7 @@ namespace gg
       if (this != &o)
       {
         vao = o.vao;
+        mode = o.mode;
         glBindVertexArray(vao);
       }
       return *this;
@@ -3813,8 +3818,20 @@ namespace gg
       return vao;
     }
 
+    // 図形要素の設定
+    void setMode(GLenum mode)
+    {
+      this->mode = mode;
+    }
+
+    // 図形要素の検査
+    GLenum getMode(void) const
+    {
+      return this->mode;
+    }
+
     // この形状を描画する手続きをオーバーライドする
-    virtual void draw(GLenum mode = GL_POINTS) const = 0;
+    virtual void draw(void) const = 0;
   };
 
   /*
@@ -3826,20 +3843,38 @@ namespace gg
     // 頂点バッファオブジェクト
     GgBuffer<GLfloat[3]> position;
 
+    // バッファオブジェクトを確保して頂点位置を格納する
+    void loadPosition(
+      GLuint nv,                            // 頂点数
+      const GLfloat (*pos)[3],              // 頂点位置のデータ
+      GLenum usage                          // バッファオブジェクトの使い方
+      )
+    {
+      // 頂点位置
+      position.load(GL_ARRAY_BUFFER, nv, pos, usage);
+
+      // このバッファオブジェクトは index == 0 の in 変数から入力する
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+      glEnableVertexAttribArray(0);
+    }
+
   public:
 
     // デストラクタ
     virtual ~GgPoints(void) {}
 
     // コンストラクタ
-    GgPoints(void) {}
+    GgPoints(GLenum mode = GL_POINTS)
+      : GgShape(mode) {}
     GgPoints(
       GLuint nv,                            // 頂点数
       const GLfloat (*pos)[3],              // 頂点位置のデータ
+      GLenum mode = GL_POINTS,              // 描画する図形要素
       GLenum usage = GL_STATIC_DRAW         // バッファオブジェクトの使い方
       )
+      : GgShape(mode)
     {
-      load(nv, pos, usage);
+      loadPosition(nv, pos, usage);
     }
     GgPoints(const GgPoints &o)
       : GgShape(o), position(o.position) {}
@@ -3855,7 +3890,7 @@ namespace gg
       return *this;
     }
 
-    // 既存のバッファオブジェクトにデータを転送する
+    // 既存のバッファオブジェクトに頂点位置を転送する
     void send(
       GLuint nv,                            // 転送するデータの数 (0 ならバッファ全体)
       const GLfloat (*pos)[3],              // 転送元のデータが格納されてている領域の先頭のポインタ
@@ -3865,18 +3900,14 @@ namespace gg
       position.send(nv, pos, offset);
     }
 
-    // バッファオブジェクトを確保して頂点を格納する
+    // バッファオブジェクトを確保して頂点位置を格納する
     void load(
       GLuint nv,                            // 頂点数
       const GLfloat (*pos)[3],              // 頂点位置のデータ
       GLenum usage = GL_STATIC_DRAW         // バッファオブジェクトの使い方
       )
     {
-      position.load(GL_ARRAY_BUFFER, nv, pos, usage);
-
-      // このバッファオブジェクトは index == 0 の in 変数から入力する
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-      glEnableVertexAttribArray(0);
+      loadPosition(nv, pos, usage);
     }
 
     // バッファオブジェクト名を取り出す
@@ -3892,7 +3923,7 @@ namespace gg
     }
 
     // ポイントの描画
-    virtual void draw(GLenum mode = GL_POINTS) const;
+    virtual void draw(void) const;
   };
 
   /*
@@ -3904,21 +3935,39 @@ namespace gg
     // 頂点の法線ベクトル
     GgBuffer<GLfloat[3]> normal;
 
+    // バッファオブジェクトを確保して法線を格納する
+    void loadNormal(
+      GLuint nv,                            // 頂点数
+      const GLfloat (*norm)[3],             // 頂点法線のデータ
+      GLenum usage                          // バッファオブジェクトの使い方
+      )
+    {
+      // 頂点法線
+      normal.load(GL_ARRAY_BUFFER, nv, norm, usage);
+
+      // このバッファオブジェクトは index == 1 の in 変数から入力する
+      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+      glEnableVertexAttribArray(1);
+    }
+
   public:
 
     // デストラクタ
     virtual ~GgTriangles(void) {}
 
     // コンストラクタ
-    GgTriangles(void) {}
+    GgTriangles(GLenum mode = GL_TRIANGLES)
+      : GgPoints(mode) {}
     GgTriangles(
       GLuint nv,                            // 頂点数
       const GLfloat (*pos)[3],              // 頂点位置のデータ
       const GLfloat (*norm)[3],             // 頂点法線のデータ
+      GLenum mode = GL_TRIANGLES,           // 描画する図形要素
       GLenum usage = GL_STATIC_DRAW         // バッファオブジェクトの使い方
       )
+      : GgPoints(nv, pos, mode, usage)
     {
-      load(nv, pos, norm);
+      loadNormal(nv, norm, usage);
     }
     GgTriangles(const GgTriangles &o)
       : GgPoints(o), normal(o.normal) {}
@@ -3934,7 +3983,7 @@ namespace gg
       return *this;
     }
 
-    // 既存のバッファオブジェクトにデータを転送する
+    // 既存のバッファオブジェクトに頂点位置と法線を転送する
     void send(
       GLuint nv,                            // 転送する頂点数 (0 ならバッファ全体)
       const GLfloat (*pos)[3],              // 転送元の頂点位置のデータ
@@ -3946,7 +3995,7 @@ namespace gg
       normal.send(nv, norm, offset);
     }
 
-    // バッファオブジェクトを確保して位置と法線を格納する
+    // バッファオブジェクトを確保して頂点位置と法線を格納する
     void load(
       GLuint nv,                            // 頂点数
       const GLfloat (*pos)[3],              // 頂点位置のデータ
@@ -3955,11 +4004,7 @@ namespace gg
       )
     {
       GgPoints::load(nv, pos, usage);
-      normal.load(GL_ARRAY_BUFFER, nv, norm, usage);
-
-      // このバッファオブジェクトは index == 1 の in 変数から入力する
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-      glEnableVertexAttribArray(1);
+      loadNormal(nv, norm, usage);
     }
 
     // バッファオブジェクト名を取り出す
@@ -3973,9 +4018,6 @@ namespace gg
     {
       return normal.num();
     }
-
-    // 三角形群を描画する手続き
-    virtual void draw(GLenum mode = GL_TRIANGLE_FAN) const;
   };
 
   /*
@@ -3993,16 +4035,18 @@ namespace gg
     virtual ~GgElements(void) {}
 
     // コンストラクタ
-    GgElements(void) {}
+    GgElements(GLenum mode = GL_TRIANGLES)
+      : GgTriangles(mode) {}
     GgElements(
       GLuint nv,                            // 頂点数
       const GLfloat (*pos)[3],              // 頂点位置のデータ
       const GLfloat (*norm)[3],             // 頂点法線のデータ
       GLuint nf,                            // 三角形数
       const GLuint (*face)[3],              // 三角形の頂点インデックス
+      GLenum mode = GL_TRIANGLES,           // 描画する図形要素
       GLenum usage = GL_STATIC_DRAW         // バッファオブジェクトの使い方
       )
-      : GgTriangles(nv, pos, norm, usage)
+      : GgTriangles(nv, pos, norm, mode, usage)
     {
       index.load(GL_ELEMENT_ARRAY_BUFFER, nf, face);
     }
@@ -4022,13 +4066,12 @@ namespace gg
 
     // 既存のバッファオブジェクトにデータを転送する
     void send(
-      GLuint nv,                            // 転送する頂点数 (0 ならバッファ全体)
-      const GLfloat (*pos)[3],              // 転送元の頂点位置のデータ
-      const GLfloat (*norm)[3],             // 転送元の頂点法線のデータ
-      GLuint offset = 0                     // 転送先のバッファオブジェクトの先頭の要素番号
+      GLuint nf,                            // 三角形数
+      const GLuint (*face)[3],              // 三角形の頂点インデックス
+      GLuint offset                         // 転送先のバッファオブジェクトの先頭の要素番号
       )
     {
-      GgTriangles::send(nv, pos, norm, offset);
+      index.send(nf, face, offset);
     }
 
     // バッファオブジェクトを確保して位置と法線とインデックスを格納する
@@ -4058,7 +4101,7 @@ namespace gg
     }
 
     // 三角形ポリゴンを描画する手続き
-    virtual void draw(GLenum mode = GL_TRIANGLES) const;
+    virtual void draw(void) const;
   };
 
   /*
