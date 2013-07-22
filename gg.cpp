@@ -5318,8 +5318,13 @@ bool gg::ggLoadObj(const char *name, GLuint &ng, GLuint (*&group)[2],
   // データの読み込み
   while (std::getline(file, line))
   {
-    // １行取り出して最初のトークンを命令 (op) とみなす
+    // 最後の文字が \r なら削除する
+    if (*(line.end() - 1) == '\r') line.erase(--line.end());
+
+    // 一行を文字列ストリームに入れる
     std::istringstream str(line);
+
+    // 最初のトークンを命令 (op) とみなす
     std::string op;
     str >> op;
 
