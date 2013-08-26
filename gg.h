@@ -3719,21 +3719,12 @@ namespace gg
     void copy(GLuint buf)
     {
       const size_t size = sizeof (T) * number;
-#ifdef __APPLE__
-      T *temp = new T[number];
-      glBindBuffer(GL_ARRAY_BUFFER, buf);
-      glGetBufferSubData(GL_ARRAY_BUFFER, 0, size, temp);
-      glBindBuffer(GL_ARRAY_BUFFER, buffer);
-      glBufferSubData(GL_ARRAY_BUFFER, 0, size, temp);
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
-      delete[] temp;
-#else
+
       glBindBuffer(GL_COPY_READ_BUFFER, buf);
       glBindBuffer(GL_COPY_WRITE_BUFFER, buffer);
       glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, size);
       glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
       glBindBuffer(GL_COPY_READ_BUFFER, 0);
-#endif
     }
 
     // バッファオブジェクト名を取り出す
@@ -3776,7 +3767,7 @@ namespace gg
     }
 
     // コンストラクタ
-    GgShape(GLenum mode = 0)
+    GgShape(GLenum mode = GL_POINTS)
     {
       this->mode = mode;
       glGenVertexArrays(1, &vao);

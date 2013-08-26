@@ -6873,11 +6873,11 @@ gg::GgElements *gg::ggElementsMesh(GLfloat width, GLfloat height, int slices, in
   // 頂点の位置と法線ベクトルを求める
   for (int k = 0, j = 0; j <= stacks; ++j)
   {
-    GLfloat y = (GLfloat)j / (GLfloat)stacks;
+    GLfloat y = static_cast<GLfloat>(j) / static_cast<GLfloat>(stacks);
 
     for (int i = 0; i <= slices; ++i)
     {
-      GLfloat x = (GLfloat)i / (GLfloat)slices;
+      GLfloat x = static_cast<GLfloat>(i) / static_cast<GLfloat>(slices);
 
       // 頂点の座標値
       pos[k][0] = x;
